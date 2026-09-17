@@ -172,3 +172,7 @@ Automated tests should cover:
 - Should missing observations ever be interpolated for ML purposes?
 - Should cleaning produce a report describing how many rows were removed?
 - Should validation rules differ for intraday versus daily market data?
+
+## Worth Noting for Future Growth
+If we later combine multiple tickers into one DataFrame, the duplicate key should become something like:  
+` ticker + date`
