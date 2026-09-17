@@ -1,11 +1,10 @@
 """
 FastAPI entry point.
 
-Platform note: created so the container has a startup path and CI has
-something to assert against. Only /health lives here.
+Only /health lives here — it exists so the container has a startup path
+and CI has something to assert against.
 
-Member 3 owns the stock endpoints — register routers at the bottom.
-Response shapes belong in docs/api-contract.md.
+Register additional routers at the bottom of this file.
 """
 
 import logging
@@ -39,8 +38,3 @@ def health() -> dict:
             log.warning("database health check failed: %s", exc)
             db_status = "error"
     return {"status": "ok", "database": db_status}
-
-
-# Member 3: register routers here, e.g.
-# from app.api.stocks import router as stocks_router
-# app.include_router(stocks_router)
