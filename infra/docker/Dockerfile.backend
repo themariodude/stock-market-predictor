@@ -1,0 +1,43 @@
+# Patch version + Debian release pinned — no silent base moves.
+FROM python:3.12.7-slim-bookworm
+
+# Unbuffered logs so `docker compose logs` shows output live.
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+# CI builds with true to get pytest inside the image.
+ARG INSTALL_DEV=false
+
+# Created before COPY so --chown sets ownership inline; a later chown -R
+# would duplicate the whole tree into a new layer.
+# uid 1000 matches the host user, so bind-mounted files stay writable.
+# bash, not nologin — we need `compose exec backend pytest`.
+RUN useradd --create-home --uid 1000 --shell /bin/bash appuser \
+    && mkdir -p /app \
+    && chown appuser:appuser /app
+
+# backend/ is the Python import root and its contents land here.
+WORKDIR /app
+
+# Deps before source: this layer survives code edits.
+COPY --chown=appuser:appuser backend/requirements.txt backend/requirements-dev.txt ./
+
+# Either/or — requirements-dev.txt already does `-r requirements.txt`.
+RUN python -m pip install --no-cache-dir --upgrade pip \
+    && if [ "$INSTALL_DEV" = "true" ]; then \
+         python -m pip install --no-cache-dir -r requirements-dev.txt; \
+       else \
+         python -m pip install --no-cache-dir -r requirements.txt; \
+       fi
+
+# Contents of backend/ go directly in /app, so app/ and pytest.ini sit at
+# the import root.
+COPY --chown=appuser:appuser backend/ ./
+
+USER appuser
+
+EXPOSE 8000
+
+# app.main:app, not backend.app.main:app — /app is the import root.
+# Migrations deliberately excluded: they race when replicas start together.
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
