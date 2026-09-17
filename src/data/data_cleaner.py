@@ -21,14 +21,21 @@ class MarketDataCleaner:
 
         cleaned = df[self.REQUIRED_COLUMNS].copy()
 
-        cleaned["date"] = pd.to_datetime(cleaned["date"], errors="coerce")
+        # Validate dates while distinguishing malformed from missing values
+        non_missing_dates = cleaned["date"].notna()
 
-        """for column in self.NUMERIC_COLUMNS:
-            cleaned[column] = pd.to_numeric(
-                cleaned[column],
-                errors="coerce",
-            )"""
-        #Explicit Vaidation Method to replace Method above
+        converted_dates = pd.to_datetime(
+            cleaned.loc[non_missing_dates, "date"],
+            errors="coerce"
+        )
+        if converted_dates.isna().any():
+            raise ValueError(
+                "Column 'date' contains invalid date values."
+            )
+
+        cleaned.loc[non_missing_dates, "date"] = converted_dates
+
+        #Explicit Vaidation for Numeric Column
         for column in self.NUMERIC_COLUMNS:
             non_missing = cleaned[column].notna()
 
