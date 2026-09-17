@@ -7,6 +7,7 @@ something to assert against. Only /health lives here.
 Member 3 owns the stock endpoints — register routers at the bottom.
 Response shapes belong in docs/api-contract.md.
 """
+
 import logging
 import os
 

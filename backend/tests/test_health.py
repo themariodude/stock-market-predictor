@@ -1,4 +1,5 @@
 """Smoke test for the health endpoint. Runs without a database."""
+
 from fastapi.testclient import TestClient
 
 from app.main import app
