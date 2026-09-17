@@ -32,9 +32,7 @@ def test_unsupported_stock_returns_404():
     response = client.get("/stocks/AAPL")
 
     assert response.status_code == 404
-    assert response.json() == {
-        "detail": "Unsupported stock ticker: AAPL"
-    }
+    assert response.json() == {"detail": "Unsupported stock ticker: AAPL"}
 
 
 def test_stock_details_success_and_normalizes_ticker(monkeypatch):
@@ -109,14 +107,10 @@ def test_invalid_history_range_returns_400(monkeypatch):
         fake_historical_stock_data,
     )
 
-    response = client.get(
-        "/stocks/LMT/history?time_range=INVALID"
-    )
+    response = client.get("/stocks/LMT/history?time_range=INVALID")
 
     assert response.status_code == 400
-    assert response.json() == {
-        "detail": "Unsupported time range"
-    }
+    assert response.json() == {"detail": "Unsupported time range"}
 
 
 def test_service_failure_returns_502(monkeypatch):
@@ -131,15 +125,12 @@ def test_service_failure_returns_502(monkeypatch):
     response = client.get("/stocks/LMT")
 
     assert response.status_code == 502
-    assert response.json() == {
-        "detail": "Market data unavailable"
-    }
+    assert response.json() == {"detail": "Market data unavailable"}
+
 
 def test_history_service_failure_returns_502(monkeypatch):
     def fake_historical_stock_data(ticker, time_range):
-        raise HistoricalStockDataError(
-            "Historical data unavailable"
-        )
+        raise HistoricalStockDataError("Historical data unavailable")
 
     monkeypatch.setattr(
         "app.api.stocks.get_historical_stock_data",

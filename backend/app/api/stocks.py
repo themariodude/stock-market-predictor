@@ -1,14 +1,12 @@
 """
 US-01 — View Supported Stocks
 
-Defines the API endpoints for retrieving 
+Defines the API endpoints for retrieving
 information about supported defense-sector stocks.
-It provides functionality to list supported stocks, 
-retrieve historical stock data, and get current 
+It provides functionality to list supported stocks,
+retrieve historical stock data, and get current
 market information for a specific stock ticker.
 """
-
-
 
 from fastapi import APIRouter, HTTPException, Query
 
