@@ -15,7 +15,7 @@ class MarketDataProvider(ABC):
         Must return a DataFrame with standard columns:
         ['date', 'open', 'high', 'low', 'close', 'volume']
         """
-        pass
+    ...
 
 
 class YFinanceProvider(MarketDataProvider):
@@ -30,10 +30,16 @@ class YFinanceProvider(MarketDataProvider):
             raise ValueError("Ticker symbol must be a non-empty string.")
 
         # auto_adjust=False ensures Open, High, Low, Close, Volume remain standard
+        start = pd.to_datetime(start_date)
+        end = pd.to_datetime(end_date)
+
+        if start >= end:
+            raise ValueError("start_date must be earlier than end_date.")
+        
         df = yf.download(
             tickers=ticker,
-            start = pd.to_datetime(start_date),
-            end = pd.to_datetime(end_date),
+            start=start,
+            end=end,
             progress=False,
             auto_adjust=False,
         )
@@ -61,6 +67,9 @@ class YFinanceProvider(MarketDataProvider):
 
         # Ensure date format is uniform datetime and drop any incomplete records
         df["date"] = pd.to_datetime(df["date"])
-        df = df.dropna().reset_index(drop=True)
+
+        df = df.dropna(
+            subset=["date", "open", "high", "low", "close", "volume"]
+        ).reset_index(drop=True)
 
         return df
