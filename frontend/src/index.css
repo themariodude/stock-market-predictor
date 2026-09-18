@@ -57,6 +57,20 @@ button {
   padding: 2rem;
 }
 
+.back-button {
+  display: inline-block;
+  margin-bottom: 1.5rem;
+  padding: 0.6rem 1rem;
+
+  border: 1px solid #3a4653;
+  border-radius: 6px;
+
+  background: #18232e;
+  color: #ffffff;
+
+  text-decoration: none;
+}
+
 .stock-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
