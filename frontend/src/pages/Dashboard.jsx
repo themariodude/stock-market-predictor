@@ -43,6 +43,9 @@ function Dashboard() {
 
   return (
     <main className="dashboard-page">
+      <Link to="/" className="back-button">
+        ← Back to Home
+      </Link>
       <h1>Defense Stock Dashboard</h1>
       <p>Select a stock to view its historical performance.</p>
       {/* Grid of clickable stock cardsthat link to detail page
