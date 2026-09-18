@@ -54,7 +54,9 @@ def get_current_stock_info(ticker: str) -> dict[str, Any]:
         volume = info.get("last_volume")
 
         if current_price is None:
-            raise StockDataError(f"Current price could not be retrieved for {symbol}.")
+            raise StockDataError(
+                f"Current price could not be retrieved for {symbol}."
+            )
 
         price_change = None
         percent_change = None
@@ -67,13 +69,19 @@ def get_current_stock_info(ticker: str) -> dict[str, Any]:
             "ticker": symbol,
             "current_price": round(float(current_price), 2),
             "previous_close": (
-                round(float(previous_close), 2) if previous_close is not None else None
+                round(float(previous_close), 2)
+                if previous_close is not None
+                else None
             ),
             "price_change": (
-                round(float(price_change), 2) if price_change is not None else None
+                round(float(price_change), 2)
+                if price_change is not None
+                else None
             ),
             "percent_change": (
-                round(float(percent_change), 2) if percent_change is not None else None
+                round(float(percent_change), 2)
+                if percent_change is not None
+                else None
             ),
             "volume": int(volume) if volume is not None else None,
         }
