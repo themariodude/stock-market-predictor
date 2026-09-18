@@ -12,7 +12,8 @@ class MarketDataCleaner:
             raise TypeError("Input must be a pandas DataFrame.")
 
         missing = [
-            column for column in self.REQUIRED_COLUMNS
+            column
+            for column in self.REQUIRED_COLUMNS
             if column not in df.columns
         ]
 
@@ -22,14 +23,15 @@ class MarketDataCleaner:
         cleaned = df[self.REQUIRED_COLUMNS].copy()
 
         # Validate dates while distinguishing malformed from missing values
-        original_dates=cleaned["date"]
+        original_dates = cleaned["date"]
 
         converted_dates = pd.to_datetime(
             original_dates,
             errors="coerce",
             format="mixed",
         )
-        invalid_dates=(
+
+        invalid_dates = (
             original_dates.notna()
             & converted_dates.isna()
         )
@@ -39,21 +41,28 @@ class MarketDataCleaner:
                 "Column 'date' contains invalid date values."
             )
 
-        cleaned["date"]=converted_dates
+        cleaned["date"] = converted_dates
 
-        #Explicit Vaidation for Numeric Column
+        # Explicit validation for numeric columns
         for column in self.NUMERIC_COLUMNS:
-            original_values=cleaned[column]
+            original_values = cleaned[column]
 
             converted = pd.to_numeric(
-                original_values.notna(),
+                original_values,
                 errors="coerce",
             )
-            if converted.isna().any():
+
+            invalid_values = (
+                original_values.notna()
+                & converted.isna()
+            )
+
+            if invalid_values.any():
                 raise ValueError(
                     f"Column '{column}' contains non-numeric values."
                 )
-            cleaned.loc[non_missing, column] = converted
+
+            cleaned[column] = converted
 
         cleaned = cleaned.dropna(
             subset=self.REQUIRED_COLUMNS
