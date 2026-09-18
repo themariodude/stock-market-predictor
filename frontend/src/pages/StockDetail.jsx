@@ -36,7 +36,9 @@ function StockDetail() {
           />
         </div>
 
-        <StockChart data={history} />
+        <StockChart 
+          data={history}
+          range={range} />
       </section>
     </main>
   );
