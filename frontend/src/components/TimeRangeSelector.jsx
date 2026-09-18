@@ -1,6 +1,6 @@
 function TimeRangeSelector({ selectedRange, onRangeChange }) {
   // Time-range options shown as buttons
-  const ranges = ["1M", "6M", "1Y", "5Y"];
+  const ranges = ["1M", "6M", "1Y", "5Y", "MAX"];
 
   return (
     <div className="time-range-selector">
