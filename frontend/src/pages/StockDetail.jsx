@@ -13,11 +13,18 @@ function StockDetail() {
   // Static historical closing prices.
   // TODO: stock/range currently only shows the same five days of data.
   const history = [
-    { date: "Sep 1", close: 465.2 },
-    { date: "Sep 2", close: 468.7 },
-    { date: "Sep 3", close: 470.1 },
-    { date: "Sep 4", close: 469.4 },
-    { date: "Sep 5", close: 472.35 },
+   { date: "2023-11-21", close: 492.56 },
+   { date: "2024-05-01", close: 512.93 },
+   { date: "2024-12-23", close: 507.12 },
+   { date: "2025-01-02", close: 482.14 },
+   { date: "2025-04-01", close: 471.83 },
+   { date: "2025-07-01", close: 463.72 },
+   { date: "2025-10-01", close: 489.31 },
+   { date: "2026-01-02", close: 501.44 },
+   { date: "2026-04-01", close: 493.26 },
+   { date: "2026-07-01", close: 507.19 },
+   { date: "2026-09-01", close: 512.37 },
+   { date: "2026-09-13", close: 519.59 },
   ];
 
   return (
