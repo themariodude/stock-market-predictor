@@ -37,7 +37,8 @@ def get_historical_stock_data(ticker: str, time_range: str) -> dict[str, Any]:
     if normalized_range not in TIME_RANGE_TO_YFINANCE_PERIOD:
         supported = ", ".join(TIME_RANGE_TO_YFINANCE_PERIOD.keys())
         raise ValueError(
-            f"Unsupported time range '{time_range}'. Supported ranges are: {supported}."
+            f"Unsupported time range '{time_range}'. "
+            f"Supported ranges are: {supported}."
         )
 
     period = TIME_RANGE_TO_YFINANCE_PERIOD[normalized_range]
