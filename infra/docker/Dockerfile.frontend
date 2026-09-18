@@ -1,0 +1,16 @@
+# Development image. Production build comes in a later sprint.
+FROM node:24-alpine
+
+WORKDIR /app
+
+# Lockfile first so this layer caches across source edits.
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+
+COPY frontend/ ./
+
+EXPOSE 5173
+
+# --host is required: Vite binds 127.0.0.1 by default, which inside a
+# container means the port mapping appears to do nothing.
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
