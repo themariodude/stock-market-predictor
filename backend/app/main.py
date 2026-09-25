@@ -13,8 +13,6 @@ import os
 from fastapi import FastAPI
 from sqlalchemy import create_engine, text
 
-from app.api.stocks import router as stocks_router
-
 logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO"),
     format="%(asctime)s %(levelname)s %(name)s %(message)s",
@@ -40,6 +38,3 @@ def health() -> dict:
             log.warning("database health check failed: %s", exc)
             db_status = "error"
     return {"status": "ok", "database": db_status}
-
-
-app.include_router(stocks_router)
