@@ -5,7 +5,6 @@ Provides historical stock data for a selected time range.
 """
 
 from typing import Any
-
 import yfinance as yf
 
 
