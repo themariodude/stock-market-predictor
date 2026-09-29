@@ -70,8 +70,7 @@ def get_prediction_direction(ticker: str) -> dict[str, Any]:
             )
 
         daily_changes = [
-            closes[index] - closes[index - 1]
-            for index in range(1, len(closes))
+            closes[index] - closes[index - 1] for index in range(1, len(closes))
         ]
         average_change = sum(daily_changes) / len(daily_changes)
 
@@ -79,9 +78,7 @@ def get_prediction_direction(ticker: str) -> dict[str, Any]:
         predicted_price = current_price + average_change
         predicted_change = predicted_price - current_price
         predicted_percent_change = (
-            (predicted_change / current_price) * 100
-            if current_price != 0
-            else 0
+            (predicted_change / current_price) * 100 if current_price != 0 else 0
         )
         direction = classify_prediction_direction(
             current_price,
