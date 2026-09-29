@@ -18,6 +18,10 @@ from app.services.historical_stock_data import (
     HistoricalStockDataError,
     get_historical_stock_data,
 )
+from app.services.prediction_direction import (
+    PredictionDirectionError,
+    get_prediction_direction,
+)
 
 router = APIRouter(prefix="/stocks", tags=["stocks"])
 
@@ -70,6 +74,24 @@ def stock_history(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except HistoricalStockDataError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+@router.get("/{ticker}/prediction-direction")
+def stock_prediction_direction(ticker: str) -> dict:
+    """Return the predicted movement direction for a supported stock."""
+    symbol = validate_supported_ticker(ticker)
+
+    try:
+        result = get_prediction_direction(symbol)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except PredictionDirectionError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    return {
+        "company_name": SUPPORTED_STOCKS[symbol],
+        **result,
+    }
 
 
 @router.get("/{ticker}")
