@@ -10,6 +10,10 @@ from typing import Any
 
 import numpy as np
 from sklearn.linear_model import LinearRegression
+from app.services.historical_stock_data import (
+    HistoricalStockDataError,
+    get_historical_stock_data,
+)
 
 
 class StockPredictionError(Exception):
@@ -77,7 +81,7 @@ def train_and_predict(
     features, targets, target_dates = prepare_prediction_data(records)
 
     split_index = int(len(features) * train_ratio)
-    
+
     #Requires at least 2 training examples
     if split_index < 2 or split_index >= len(features):
         raise StockPredictionError(
@@ -102,3 +106,33 @@ def train_and_predict(
         "actual": y_test.tolist(),
         "predictions": predictions.tolist(),
     }
+
+#Wrapper
+
+
+
+def get_stock_prediction(ticker: str) -> dict[str, Any]:
+    """
+    Retrieve historical stock data and generate ML predictions for a ticker.
+    """
+    if not ticker or not ticker.strip():
+        raise ValueError("Ticker symbol is required.")
+
+    symbol = ticker.strip().upper()
+
+    try:
+        history = get_historical_stock_data(symbol, "1Y")
+
+        result = train_and_predict(history["data"])
+
+        return {
+            "ticker": symbol,
+            **result,
+        }
+
+    except StockPredictionError:
+        raise
+    except (HistoricalStockDataError, KeyError, TypeError, ValueError) as exc:
+        raise StockPredictionError(
+            f"Unable to generate stock prediction for {symbol}."
+        ) from exc

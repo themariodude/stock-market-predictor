@@ -23,6 +23,11 @@ from app.services.prediction_direction import (
     get_prediction_direction,
 )
 
+from app.services.stock_prediction import (
+    StockPredictionError,
+    get_stock_prediction,
+)
+
 router = APIRouter(prefix="/stocks", tags=["stocks"])
 
 
@@ -94,6 +99,22 @@ def stock_prediction_direction(ticker: str) -> dict:
     }
 
 
+@router.get("/{ticker}")
+def stock_details(ticker: str) -> dict:
+    """Return current market information for a supported stock."""
+    symbol = validate_supported_ticker(ticker)
+
+    try:
+        result = get_current_stock_info(symbol)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except StockDataError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    return {
+        "company_name": SUPPORTED_STOCKS[symbol],
+        **result,
+    }
 @router.get("/{ticker}")
 def stock_details(ticker: str) -> dict:
     """Return current market information for a supported stock."""

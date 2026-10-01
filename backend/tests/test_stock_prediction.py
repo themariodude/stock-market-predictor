@@ -2,6 +2,7 @@ import pytest
 
 from app.services.stock_prediction import (
     StockPredictionError,
+    get_stock_prediction,
     prepare_prediction_data,
     train_and_predict,
 )
@@ -132,3 +133,55 @@ def test_train_and_predict_rejects_split_with_no_test_data():
             sample_records()[:3],
             train_ratio=0.99,
         )
+
+def test_get_stock_prediction_uses_historical_pipeline(monkeypatch):
+    records = sample_records()
+
+    def fake_historical_stock_data(ticker, time_range):
+        assert ticker == "LMT"
+        assert time_range == "1Y"
+
+        return {
+            "ticker": "LMT",
+            "time_range": "1Y",
+            "period": "1y",
+            "count": len(records),
+            "data": records,
+        }
+
+    monkeypatch.setattr(
+        "app.services.stock_prediction.get_historical_stock_data",
+        fake_historical_stock_data,
+    )
+
+    result = get_stock_prediction("lmt")
+
+    assert result["ticker"] == "LMT"
+    assert result["model"] == "LinearRegression"
+    assert len(result["actual"]) == len(result["predictions"])
+    assert result["test_count"] == len(result["actual"])
+
+
+def test_get_stock_prediction_handles_invalid_historical_data(monkeypatch):
+    def fake_historical_stock_data(ticker, time_range):
+        return {
+            "ticker": ticker,
+            "data": [
+                {
+                    "date": "2026-01-01",
+                    "open": 100,
+                    "high": 101,
+                    "low": 99,
+                    "close": 100,
+                    "volume": 1000,
+                }
+            ],
+        }
+
+    monkeypatch.setattr(
+        "app.services.stock_prediction.get_historical_stock_data",
+        fake_historical_stock_data,
+    )
+
+    with pytest.raises(StockPredictionError):
+        get_stock_prediction("LMT")
