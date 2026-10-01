@@ -33,9 +33,7 @@ def test_unsupported_stock_returns_404():
     response = client.get("/stocks/AAPL")
 
     assert response.status_code == 404
-    assert response.json() == {
-        "detail": "Unsupported ticker: AAPL"
-    }
+    assert response.json() == {"detail": "Unsupported ticker: AAPL"}
 
 
 def test_stock_details_success_and_normalizes_ticker(monkeypatch):
@@ -191,22 +189,19 @@ def test_prediction_direction_service_failure_returns_502(monkeypatch):
     assert response.status_code == 502
     assert response.json() == {"detail": "Prediction unavailable"}
 
+
 def test_prediction_direction_rejects_unsupported_ticker():
     response = client.get("/stocks/AAPL/prediction-direction")
 
     assert response.status_code == 404
-    assert response.json() == {
-        "detail": "Unsupported ticker: AAPL"
-    }
+    assert response.json() == {"detail": "Unsupported ticker: AAPL"}
 
 
 def test_prediction_direction_rejects_invalid_ticker():
     response = client.get("/stocks/INVALID/prediction-direction")
 
     assert response.status_code == 404
-    assert response.json() == {
-        "detail": "Unsupported ticker: INVALID"
-    }
+    assert response.json() == {"detail": "Unsupported ticker: INVALID"}
 
 
 def test_prediction_direction_accepts_lowercase_supported_ticker(
