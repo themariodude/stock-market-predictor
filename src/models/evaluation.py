@@ -1,5 +1,6 @@
 #First Version
 import math
+from src.models.baseline import persistence_baseline
 
 
 def mean_absolute_error(actual, predicted):
@@ -56,3 +57,41 @@ def root_mean_squared_error(actual, predicted):
     ]
 
     return math.sqrt(sum(squared_errors) / len(squared_errors))
+
+from src.models.baseline import persistence_baseline
+
+
+def compare_model_to_baseline(prices, model_predictions):
+    """
+    Compare trained model predictions against the persistence baseline.
+
+    Args:
+        prices: Sequence of actual stock prices.
+        model_predictions: Predictions produced by the trained ML model.
+
+    Returns:
+        Dictionary containing MAE and RMSE for both the baseline
+        and the trained model.
+
+    Raises:
+        ValueError: If model predictions do not align with the
+        expected number of actual values.
+    """
+    actual = prices[1:]
+    baseline_predictions = persistence_baseline(prices)
+
+    if len(model_predictions) != len(actual):
+        raise ValueError(
+            "Model predictions must match the number of actual values."
+        )
+
+    return {
+        "baseline": {
+            "mae": mean_absolute_error(actual, baseline_predictions),
+            "rmse": root_mean_squared_error(actual, baseline_predictions),
+        },
+        "model": {
+            "mae": mean_absolute_error(actual, model_predictions),
+            "rmse": root_mean_squared_error(actual, model_predictions),
+        },
+    }
