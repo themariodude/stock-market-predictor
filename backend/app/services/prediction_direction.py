@@ -11,8 +11,8 @@ from app.services.historical_stock_data import (
     HistoricalStockDataError,
     get_historical_stock_data,
 )
-
 from app.services.ticker_validation import validate_ticker
+
 
 class PredictionDirectionError(Exception):
     """Raised when a prediction direction cannot be calculated."""

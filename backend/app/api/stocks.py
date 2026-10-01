@@ -26,6 +26,7 @@ from app.services.ticker_validation import (
     UnsupportedTickerError,
     validate_ticker,
 )
+
 router = APIRouter(prefix="/stocks", tags=["stocks"])
 
 
