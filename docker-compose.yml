@@ -24,6 +24,7 @@ services:
         INSTALL_DEV: "true"
     environment:
       DATABASE_URL: ${DATABASE_URL}
+      FRED_API_KEY: ${FRED_API_KEY:-}
     ports:
       - "${BACKEND_PORT}:8000"
     volumes:
