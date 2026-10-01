@@ -70,9 +70,7 @@ def _load_macro_observations(session: Session) -> pd.DataFrame:
 
     frame = pd.DataFrame(rows)
 
-    frame["observation_date"] = pd.to_datetime(
-        frame["observation_date"]
-    )
+    frame["observation_date"] = pd.to_datetime(frame["observation_date"])
     frame["available_date"] = pd.to_datetime(frame["available_date"])
 
     return frame
@@ -95,9 +93,7 @@ def _keep_forward_moving_events(
 
     # If several observations become available on the same day,
     # keep the newest observation period.
-    events = events.sort_values(
-        ["available_date", "observation_date", "id"]
-    )
+    events = events.sort_values(["available_date", "observation_date", "id"])
     events = events.drop_duplicates(
         subset=["available_date"],
         keep="last",
@@ -108,8 +104,7 @@ def _keep_forward_moving_events(
     previous_latest = events["observation_date"].cummax().shift()
 
     events = events.loc[
-        previous_latest.isna()
-        | (events["observation_date"] > previous_latest)
+        previous_latest.isna() | (events["observation_date"] > previous_latest)
     ]
 
     return events.sort_values("available_date").reset_index(drop=True)
@@ -128,30 +123,24 @@ def _build_cpi_yoy(cpi: pd.DataFrame) -> pd.DataFrame:
 
     # CPIAUCNS is stored as first-release data. If more than one row
     # somehow exists for a month, use the earliest availability date.
-    cpi = cpi.sort_values(
-        ["observation_date", "available_date", "id"]
-    ).drop_duplicates(
+    cpi = cpi.sort_values(["observation_date", "available_date", "id"]).drop_duplicates(
         subset=["observation_date"],
         keep="first",
     )
 
-    current = cpi[
-        ["id", "observation_date", "available_date", "value"]
-    ].rename(
+    current = cpi[["id", "observation_date", "available_date", "value"]].rename(
         columns={
             "available_date": "current_available_date",
             "value": "current_value",
         }
     )
 
-    previous = cpi[
-        ["observation_date", "available_date", "value"]
-    ].copy()
+    previous = cpi[["observation_date", "available_date", "value"]].copy()
 
     # Move the prior observation forward twelve months so it joins
     # against the current month's observation_date.
-    previous["observation_date"] = (
-        previous["observation_date"] + pd.DateOffset(months=12)
+    previous["observation_date"] = previous["observation_date"] + pd.DateOffset(
+        months=12
     )
 
     previous = previous.rename(
@@ -168,21 +157,17 @@ def _build_cpi_yoy(cpi: pd.DataFrame) -> pd.DataFrame:
         validate="one_to_one",
     )
 
-    yoy["cpi_yoy_pct"] = (
-        (yoy["current_value"] / yoy["prior_value"]) - 1.0
-    ) * 100.0
+    yoy["cpi_yoy_pct"] = ((yoy["current_value"] / yoy["prior_value"]) - 1.0) * 100.0
 
     # If either CPI value is NULL, pandas produces NaN here.
-    missing_value = (
-        yoy["current_value"].isna() | yoy["prior_value"].isna()
-    )
+    missing_value = yoy["current_value"].isna() | yoy["prior_value"].isna()
     yoy.loc[missing_value, "cpi_yoy_pct"] = float("nan")
 
     # The derived YoY value is not usable until BOTH source months
     # were public.
-    yoy["available_date"] = yoy[
-        ["current_available_date", "prior_available_date"]
-    ].max(axis=1)
+    yoy["available_date"] = yoy[["current_available_date", "prior_available_date"]].max(
+        axis=1
+    )
 
     events = yoy[
         [
@@ -232,9 +217,7 @@ def _align_feature(
         )
         return result
 
-    right = events[
-        ["available_date", value_column]
-    ].sort_values("available_date")
+    right = events[["available_date", value_column]].sort_values("available_date")
 
     result = pd.merge_asof(
         trading_dates.sort_values("trading_date"),
@@ -278,9 +261,7 @@ def _build_macro_features(
 
     observations = _load_macro_observations(session)
 
-    cpi = observations.loc[
-        observations["series_id"] == "CPIAUCNS"
-    ].copy()
+    cpi = observations.loc[observations["series_id"] == "CPIAUCNS"].copy()
 
     cpi_events = _build_cpi_yoy(cpi)
 
@@ -320,23 +301,15 @@ def _build_macro_features(
     result = dates.copy()
 
     result["cpi_yoy_pct"] = cpi_aligned["cpi_yoy_pct"]
-    result["cpi_yoy_age_days"] = cpi_aligned[
-        "cpi_yoy_age_days"
-    ]
+    result["cpi_yoy_age_days"] = cpi_aligned["cpi_yoy_age_days"]
 
-    result["unemployment_rate"] = unemployment_aligned[
-        "unemployment_rate"
-    ]
+    result["unemployment_rate"] = unemployment_aligned["unemployment_rate"]
     result["unemployment_rate_age_days"] = unemployment_aligned[
         "unemployment_rate_age_days"
     ]
 
-    result["fed_funds_rate"] = fed_funds_aligned[
-        "fed_funds_rate"
-    ]
-    result["fed_funds_rate_age_days"] = fed_funds_aligned[
-        "fed_funds_rate_age_days"
-    ]
+    result["fed_funds_rate"] = fed_funds_aligned["fed_funds_rate"]
+    result["fed_funds_rate_age_days"] = fed_funds_aligned["fed_funds_rate_age_days"]
 
     return result
 
@@ -373,10 +346,7 @@ def main() -> None:
     )
     parser.add_argument(
         "symbol",
-        help=(
-            "Ticker label for the quick check. "
-            "No stock table is queried."
-        ),
+        help=("Ticker label for the quick check. " "No stock table is queried."),
     )
     args = parser.parse_args()
 
