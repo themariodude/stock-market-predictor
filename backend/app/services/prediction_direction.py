@@ -4,6 +4,7 @@ US-07 - View Prediction Direction
 Provides an easy-to-read movement direction from a lightweight forecast.
 """
 
+from math import sqrt
 from typing import Any
 
 from app.services.historical_stock_data import (
@@ -21,6 +22,12 @@ DIRECTION_LABELS = {
     "UP": "Upward",
     "DOWN": "Downward",
     "FLAT": "Flat",
+}
+
+CONFIDENCE_LABELS = {
+    "HIGH": "High confidence",
+    "MEDIUM": "Medium confidence",
+    "LOW": "Low confidence",
 }
 
 
@@ -42,6 +49,56 @@ def classify_prediction_direction(
         return "DOWN"
 
     return "FLAT"
+
+
+def classify_prediction_confidence(confidence_score: float) -> str:
+    """Return a readable confidence label for a 0-100 confidence score."""
+    if confidence_score >= 70:
+        return CONFIDENCE_LABELS["HIGH"]
+
+    if confidence_score >= 40:
+        return CONFIDENCE_LABELS["MEDIUM"]
+
+    return CONFIDENCE_LABELS["LOW"]
+
+
+def calculate_prediction_confidence(
+    daily_changes: list[float],
+) -> dict[str, float | str | None]:
+    """
+    Estimate confidence from trend strength relative to recent variability.
+
+    Confidence is available when at least two recent daily changes exist. A
+    steadier trend receives a higher score, while choppy movement increases
+    uncertainty.
+    """
+    if len(daily_changes) < 2:
+        return {
+            "prediction_confidence": None,
+            "prediction_uncertainty": None,
+            "confidence_label": "Unavailable",
+        }
+
+    average_change = sum(daily_changes) / len(daily_changes)
+    variance = sum((change - average_change) ** 2 for change in daily_changes) / len(
+        daily_changes
+    )
+    volatility = sqrt(variance)
+    signal_strength = abs(average_change)
+
+    if signal_strength == 0 and volatility == 0:
+        confidence_score = 100.0
+    else:
+        confidence_score = (signal_strength / (signal_strength + volatility)) * 100
+
+    confidence_score = round(confidence_score, 1)
+    uncertainty_score = round(100 - confidence_score, 1)
+
+    return {
+        "prediction_confidence": confidence_score,
+        "prediction_uncertainty": uncertainty_score,
+        "confidence_label": classify_prediction_confidence(confidence_score),
+    }
 
 
 def get_prediction_direction(ticker: str) -> dict[str, Any]:
@@ -71,6 +128,7 @@ def get_prediction_direction(ticker: str) -> dict[str, Any]:
             closes[index] - closes[index - 1] for index in range(1, len(closes))
         ]
         average_change = sum(daily_changes) / len(daily_changes)
+        confidence = calculate_prediction_confidence(daily_changes)
 
         current_price = closes[-1]
         predicted_price = current_price + average_change
@@ -91,6 +149,7 @@ def get_prediction_direction(ticker: str) -> dict[str, Any]:
             "predicted_price": round(predicted_price, 2),
             "predicted_change": round(predicted_change, 2),
             "predicted_percent_change": round(predicted_percent_change, 2),
+            **confidence,
         }
 
     except PredictionDirectionError:

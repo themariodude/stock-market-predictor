@@ -110,6 +110,9 @@ def test_stock_prediction_direction_success(monkeypatch):
         "predicted_price": 489.25,
         "predicted_change": 3.75,
         "predicted_percent_change": 0.77,
+        "prediction_confidence": 72.5,
+        "prediction_uncertainty": 27.5,
+        "confidence_label": "High confidence",
     }
 
     def fake_prediction_direction(ticker):
