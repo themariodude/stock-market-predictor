@@ -3,6 +3,7 @@ from fastapi.testclient import TestClient
 from app.main import app
 from app.services.current_stock_info import StockDataError
 from app.services.historical_stock_data import HistoricalStockDataError
+from app.services.prediction_direction import PredictionDirectionError
 
 client = TestClient(app)
 
@@ -98,6 +99,38 @@ def test_stock_history_success_and_default_range(monkeypatch):
     assert response.json() == fake_result
 
 
+def test_stock_prediction_direction_success(monkeypatch):
+    fake_result = {
+        "ticker": "LMT",
+        "prediction_direction": "UP",
+        "direction_label": "Upward",
+        "current_price": 485.50,
+        "predicted_price": 489.25,
+        "predicted_change": 3.75,
+        "predicted_percent_change": 0.77,
+        "prediction_confidence": 72.5,
+        "prediction_uncertainty": 27.5,
+        "confidence_label": "High confidence",
+    }
+
+    def fake_prediction_direction(ticker):
+        assert ticker == "LMT"
+        return fake_result
+
+    monkeypatch.setattr(
+        "app.api.stocks.get_prediction_direction",
+        fake_prediction_direction,
+    )
+
+    response = client.get("/stocks/lmt/prediction-direction")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "company_name": "Lockheed Martin",
+        **fake_result,
+    }
+
+
 def test_invalid_history_range_returns_400(monkeypatch):
     def fake_historical_stock_data(ticker, time_range):
         raise ValueError("Unsupported time range")
@@ -140,3 +173,18 @@ def test_history_service_failure_returns_502(monkeypatch):
     response = client.get("/stocks/LMT/history")
 
     assert response.status_code == 502
+
+
+def test_prediction_direction_service_failure_returns_502(monkeypatch):
+    def fake_prediction_direction(ticker):
+        raise PredictionDirectionError("Prediction unavailable")
+
+    monkeypatch.setattr(
+        "app.api.stocks.get_prediction_direction",
+        fake_prediction_direction,
+    )
+
+    response = client.get("/stocks/LMT/prediction-direction")
+
+    assert response.status_code == 502
+    assert response.json() == {"detail": "Prediction unavailable"}
