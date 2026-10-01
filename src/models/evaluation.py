@@ -58,7 +58,6 @@ def root_mean_squared_error(actual, predicted):
 
     return math.sqrt(sum(squared_errors) / len(squared_errors))
 
-from src.models.baseline import persistence_baseline
 
 
 def compare_model_to_baseline(prices, model_predictions):
@@ -95,3 +94,37 @@ def compare_model_to_baseline(prices, model_predictions):
             "rmse": root_mean_squared_error(actual, model_predictions),
         },
     }
+
+def format_comparison_report(results):
+    """
+    Format model-versus-baseline evaluation results into a readable report.
+
+    Args:
+        results: Dictionary returned by compare_model_to_baseline().
+
+    Returns:
+        A formatted string containing baseline and model MAE and RMSE values.
+
+    Raises:
+        ValueError: If the expected result structure is missing.
+    """
+    try:
+        baseline = results["baseline"]
+        model = results["model"]
+
+        baseline_mae = baseline["mae"]
+        baseline_rmse = baseline["rmse"]
+        model_mae = model["mae"]
+        model_rmse = model["rmse"]
+
+    except (KeyError, TypeError):
+        raise ValueError(
+            "Results must contain baseline and model MAE/RMSE values."
+        )
+
+    return (
+        f"Baseline MAE: {baseline_mae:.4f}\n"
+        f"Baseline RMSE: {baseline_rmse:.4f}\n"
+        f"Model MAE: {model_mae:.4f}\n"
+        f"Model RMSE: {model_rmse:.4f}"
+    )

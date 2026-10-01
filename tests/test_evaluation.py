@@ -1,8 +1,10 @@
 import pytest
 
 from src.models.evaluation import (
+    compare_model_to_baseline,
+    format_comparison_report,
     mean_absolute_error,
-    root_mean_squared_error, compare_model_to_baseline
+    root_mean_squared_error,
 )
 
 
@@ -64,3 +66,20 @@ def test_compare_model_to_baseline_requires_aligned_predictions():
 
     with pytest.raises(ValueError):
         compare_model_to_baseline(prices, model_predictions)
+
+def test_format_comparison_report():
+    results = {
+        "baseline": {"mae": 2.0, "rmse": 3.0},
+        "model": {"mae": 1.5, "rmse": 2.5},
+    }
+
+    report = format_comparison_report(results)
+
+    assert "Baseline MAE: 2.0000" in report
+    assert "Baseline RMSE: 3.0000" in report
+    assert "Model MAE: 1.5000" in report
+    assert "Model RMSE: 2.5000" in report
+
+def test_format_comparison_report_rejects_invalid_results():
+    with pytest.raises(ValueError):
+        format_comparison_report({})
