@@ -11,6 +11,7 @@ from app.services.historical_stock_data import (
     get_historical_stock_data,
 )
 
+from app.services.ticker_validation import validate_ticker
 
 class PredictionDirectionError(Exception):
     """Raised when a prediction direction cannot be calculated."""
@@ -51,10 +52,7 @@ def get_prediction_direction(ticker: str) -> dict[str, Any]:
     forecast. A trained model can replace this calculation while preserving
     the response shape used by the API and frontend.
     """
-    if not ticker or not ticker.strip():
-        raise ValueError("Ticker symbol is required.")
-
-    symbol = ticker.strip().upper()
+    symbol = validate_ticker(ticker)
 
     try:
         history = get_historical_stock_data(symbol, "1M")
