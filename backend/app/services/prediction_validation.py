@@ -4,7 +4,6 @@ from numbers import Real
 
 from app.services.errors import InvalidPredictionResponseError
 
-
 VALID_DIRECTIONS = frozenset({"UP", "DOWN"})
 
 
