@@ -65,6 +65,8 @@ function StockDetail() {
   ];
   const predictionDirectionClass =
     prediction?.prediction_direction.toLowerCase() ?? "";
+  const hasPredictionConfidence =
+    typeof prediction?.prediction_confidence === "number";
 
   return (
     <main className="stock-detail-page">
@@ -101,6 +103,26 @@ function StockDetail() {
                 {prediction.predicted_percent_change.toFixed(2)}%)
               </strong>
             </div>
+            {hasPredictionConfidence && (
+              <div className="prediction-confidence">
+                <span>{prediction.confidence_label}</span>
+                <strong>{prediction.prediction_confidence.toFixed(1)}%</strong>
+                <div
+                  className="confidence-track"
+                  aria-label={`Prediction confidence ${prediction.prediction_confidence.toFixed(1)} percent`}
+                >
+                  <div
+                    className="confidence-fill"
+                    style={{
+                      width: `${prediction.prediction_confidence}%`,
+                    }}
+                  />
+                </div>
+                <small>
+                  {prediction.prediction_uncertainty.toFixed(1)}% uncertainty
+                </small>
+              </div>
+            )}
           </div>
         )}
 

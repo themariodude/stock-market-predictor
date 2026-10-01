@@ -21,13 +21,19 @@ class UnsupportedTickerError(ValueError):
 
 
 def normalize_ticker(ticker: str) -> str:
-    """Normalize a ticker symbol."""
+    """
+    Normalize a ticker symbol.
+
+    Leading and trailing whitespace is removed and the ticker is converted
+    to uppercase.
+    """
     return ticker.strip().upper()
 
 
 def is_supported_ticker(ticker: str) -> bool:
     """
-    Return True if the ticker is supported by the application.
+    Return True when the ticker is supported by the application.
+
     The ticker is normalized before validation.
     """
     normalized_ticker = normalize_ticker(ticker)
@@ -39,9 +45,7 @@ def is_supported_ticker(ticker: str) -> bool:
 
 
 def validate_ticker(ticker: str) -> str:
-    """
-    Validate and normalize a ticker.
-    """
+    """Validate and normalize a ticker."""
     normalized_ticker = normalize_ticker(ticker)
 
     if not normalized_ticker or normalized_ticker not in SUPPORTED_TICKERS:
