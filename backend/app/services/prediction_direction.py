@@ -79,18 +79,16 @@ def calculate_prediction_confidence(
         }
 
     average_change = sum(daily_changes) / len(daily_changes)
-    variance = sum(
-        (change - average_change) ** 2 for change in daily_changes
-    ) / len(daily_changes)
+    variance = sum((change - average_change) ** 2 for change in daily_changes) / len(
+        daily_changes
+    )
     volatility = sqrt(variance)
     signal_strength = abs(average_change)
 
     if signal_strength == 0 and volatility == 0:
         confidence_score = 100.0
     else:
-        confidence_score = (
-            signal_strength / (signal_strength + volatility)
-        ) * 100
+        confidence_score = (signal_strength / (signal_strength + volatility)) * 100
 
     confidence_score = round(confidence_score, 1)
     uncertainty_score = round(100 - confidence_score, 1)
