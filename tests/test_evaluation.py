@@ -1,7 +1,7 @@
 import pytest
 
 from src.models.evaluation import (
-    compare_model_to_baseline,
+    compare_model_to_baseline, evaluate_and_report ,
     format_comparison_report,
     mean_absolute_error,
     root_mean_squared_error,
@@ -83,3 +83,20 @@ def test_format_comparison_report():
 def test_format_comparison_report_rejects_invalid_results():
     with pytest.raises(ValueError):
         format_comparison_report({})
+
+def test_evaluate_and_report():
+    prices = [100, 102, 101, 105]
+    model_predictions = [101, 101, 104]
+
+    results, report = evaluate_and_report(
+        prices,
+        model_predictions,
+    )
+
+    assert results["baseline"]["mae"] == pytest.approx(7 / 3)
+    assert results["model"]["mae"] == pytest.approx(2 / 3)
+
+    assert "Baseline MAE:" in report
+    assert "Baseline RMSE:" in report
+    assert "Model MAE:" in report
+    assert "Model RMSE:" in report

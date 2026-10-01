@@ -128,3 +128,22 @@ def format_comparison_report(results):
         f"Model MAE: {model_mae:.4f}\n"
         f"Model RMSE: {model_rmse:.4f}"
     )
+
+def evaluate_and_report(prices, model_predictions):
+    """
+    Evaluate trained model predictions against the persistence baseline
+    and return both structured metrics and a readable report.
+
+    Args:
+        prices: Sequence of actual stock prices ordered chronologically.
+        model_predictions: Predictions produced by a trained ML model.
+
+    Returns:
+        A tuple containing:
+            - comparison results dictionary
+            - formatted comparison report
+    """
+    results = compare_model_to_baseline(prices, model_predictions)
+    report = format_comparison_report(results)
+
+    return results, report
