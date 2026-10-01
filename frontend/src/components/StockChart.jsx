@@ -10,7 +10,11 @@ import {
 
 function StockChart({ data, range }) {
   if (!data || data.length === 0) {
-    return <p>No historical data available.</p>;
+    return (
+      <div className="stock-chart">
+        <p>No historical data available.</p>
+      </div>
+    );
   }
 
   const filterDataByRange = () => {
@@ -28,15 +32,12 @@ function StockChart({ data, range }) {
 
     const days = daysByRange[range];
 
-    // If an unknown range is provided, display all data.
     if (!days) {
       return data;
     }
 
-    // Use the newest available stock date rather than today's date.
     const newestDate = new Date(data[data.length - 1].date);
     const cutoffDate = new Date(newestDate);
-
     cutoffDate.setDate(cutoffDate.getDate() - days);
 
     return data.filter((point) => {
@@ -48,7 +49,11 @@ function StockChart({ data, range }) {
   const visibleData = filterDataByRange();
 
   if (visibleData.length === 0) {
-    return <p>No historical data available for this time range.</p>;
+    return (
+      <div className="stock-chart">
+        <p>No historical data available for this time range.</p>
+      </div>
+    );
   }
 
   return (
@@ -57,10 +62,7 @@ function StockChart({ data, range }) {
         <LineChart data={visibleData}>
           <CartesianGrid strokeDasharray="3 3" />
 
-          <XAxis
-            dataKey="date"
-            minTickGap={30}
-          />
+          <XAxis dataKey="date" minTickGap={30} />
 
           <YAxis
             domain={["auto", "auto"]}
