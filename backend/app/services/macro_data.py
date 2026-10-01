@@ -4,6 +4,7 @@ Run once, or again at any time (re-runs are idempotent):
     docker compose exec backend python -m app.services.macro_data
 """
 
+import logging
 import os
 from datetime import date, datetime, timezone
 from typing import Any
@@ -17,6 +18,14 @@ from sqlalchemy.orm import Session
 
 from app.database import get_session
 from app.models.macro import MacroObservation
+from app.services.data_source import redact
+
+# urllib3 logs full request URLs at DEBUG level, and FRED only accepts the API
+# key as a URL parameter. Keep urllib3 at INFO or above even when the app logs
+# at DEBUG, unless it has deliberately been set higher.
+_urllib3_logger = logging.getLogger("urllib3")
+if _urllib3_logger.level < logging.INFO:
+    _urllib3_logger.setLevel(logging.INFO)
 
 FRED_OBSERVATIONS_URL = "https://api.stlouisfed.org/fred/series/observations"
 OBSERVATION_START = "2010-01-01"
@@ -36,8 +45,24 @@ SERIES = {
 }
 
 
+TRANSIENT_REQUEST_ERRORS = (
+    requests.Timeout,
+    requests.ConnectionError,
+    requests.exceptions.ChunkedEncodingError,
+)
+
+
 class FredError(RuntimeError):
-    """A FRED request failed. Messages never contain the API key."""
+    """A FRED request failed. Messages never contain the API key.
+
+    transient is True for failures worth retrying (timeouts, connection
+    errors, HTTP 429 and 5xx) and False for ones that will not fix
+    themselves (bad key, bad series).
+    """
+
+    def __init__(self, message: str, transient: bool = False):
+        super().__init__(message)
+        self.transient = transient
 
 
 def fetch_series(
@@ -69,7 +94,9 @@ def fetch_series(
         # requests' messages include the full URL, and the URL contains the
         # API key, so the original exception is deliberately not chained.
         raise FredError(
-            f"FRED request for {series_id} failed: {type(exc).__name__}"
+            f"FRED request for {series_id} failed: {type(exc).__name__}",
+            # ChunkedEncodingError: the connection dropped mid-response.
+            transient=isinstance(exc, TRANSIENT_REQUEST_ERRORS),
         ) from None
 
     if response.status_code != 200:
@@ -77,12 +104,25 @@ def fetch_series(
             detail = response.json().get("error_message", "")
         except ValueError:
             detail = ""
+        detail = redact(str(detail), api_key)
         raise FredError(
             f"FRED request for {series_id} failed "
-            f"with HTTP {response.status_code}: {detail}"
+            f"with HTTP {response.status_code}: {detail}",
+            transient=response.status_code == 429 or response.status_code >= 500,
         )
 
-    return [_to_row(series_id, method, obs) for obs in response.json()["observations"]]
+    try:
+        return [
+            _to_row(series_id, method, obs) for obs in response.json()["observations"]
+        ]
+    except (ValueError, KeyError, TypeError) as exc:
+        # A 200 with an unexpected body (HTML error page, changed schema, bad
+        # value). Not retried: the same request returns the same body.
+        raise FredError(
+            f"FRED returned an unexpected response for {series_id}: "
+            f"{type(exc).__name__}",
+            transient=False,
+        ) from None
 
 
 def _to_row(series_id: str, method: str, obs: dict[str, str]) -> dict[str, Any]:
