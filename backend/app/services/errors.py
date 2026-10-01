@@ -1,5 +1,6 @@
 """Application-level exceptions used for controlled error handling."""
 
+
 class ApplicationServiceError(Exception):
     """Base class for controlled application service failures."""
 

@@ -18,9 +18,7 @@ def validate_prediction_response(prediction: dict) -> dict:
         expected_change
     """
     if not isinstance(prediction, dict):
-        raise InvalidPredictionResponseError(
-            "Prediction response must be an object."
-        )
+        raise InvalidPredictionResponseError("Prediction response must be an object.")
 
     required_fields = {
         "ticker",
@@ -48,9 +46,7 @@ def validate_prediction_response(prediction: dict) -> dict:
         )
 
     if direction not in VALID_DIRECTIONS:
-        raise InvalidPredictionResponseError(
-            "Prediction direction must be UP or DOWN."
-        )
+        raise InvalidPredictionResponseError("Prediction direction must be UP or DOWN.")
 
     if (
         isinstance(confidence, bool)
@@ -65,8 +61,6 @@ def validate_prediction_response(prediction: dict) -> dict:
         expected_change,
         Real,
     ):
-        raise InvalidPredictionResponseError(
-            "Expected change must be numeric."
-        )
+        raise InvalidPredictionResponseError("Expected change must be numeric.")
 
     return prediction
