@@ -8,353 +8,127 @@ Run a quick check with real data:
     docker compose exec backend python -m app.services.macro_features LMT
 """
 
-import argparse
 from collections.abc import Iterable
-from datetime import date, datetime
+from datetime import date
 
 import pandas as pd
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.database import engine
 from app.models.macro import MacroObservation
 
-SERIES_IDS = ("CPIAUCNS", "UNRATE", "DFF")
+# Output feature name for each stored series.
+FEATURE_NAMES = {
+    "CPIAUCNS": "cpi_yoy_pct",
+    "UNRATE": "unemployment_rate",
+    "DFF": "fed_funds_rate",
+}
 
 
-def _normalize_trading_dates(
-    trading_dates: Iterable[date | datetime | str | pd.Timestamp],
-) -> pd.DataFrame:
-    dates = pd.to_datetime(list(trading_dates), errors="raise")
-
-    frame = pd.DataFrame({"trading_date": dates})
-    frame["trading_date"] = frame["trading_date"].dt.normalize()
-
-    return (
-        frame.drop_duplicates(subset=["trading_date"])
-        .sort_values("trading_date")
-        .reset_index(drop=True)
-    )
-
-
-def _load_macro_observations(session: Session) -> pd.DataFrame:
-    statement = (
+def load_macro_observations(session: Session) -> pd.DataFrame:
+    """Load all stored macro observations."""
+    rows = session.execute(
         select(
-            MacroObservation.id,
             MacroObservation.series_id,
             MacroObservation.observation_date,
             MacroObservation.available_date,
             MacroObservation.value,
         )
-        .where(MacroObservation.series_id.in_(SERIES_IDS))
-        .order_by(
-            MacroObservation.series_id,
-            MacroObservation.observation_date,
-            MacroObservation.available_date,
-            MacroObservation.id,
-        )
+    ).all()
+    return pd.DataFrame(
+        rows,
+        columns=["series_id", "observation_date", "available_date", "value"],
     )
 
-    rows = session.execute(statement).mappings().all()
 
-    if not rows:
-        return pd.DataFrame(
-            columns=[
-                "id",
-                "series_id",
-                "observation_date",
-                "available_date",
-                "value",
-            ]
-        )
+def cpi_year_over_year(cpi: pd.DataFrame) -> pd.DataFrame:
+    """12-month % change computed from first-release CPI levels.
 
-    frame = pd.DataFrame(rows)
-
-    frame["observation_date"] = pd.to_datetime(frame["observation_date"])
-    frame["available_date"] = pd.to_datetime(frame["available_date"])
-
-    return frame
-
-
-def _keep_forward_moving_events(
-    events: pd.DataFrame,
-    value_column: str,
-) -> pd.DataFrame:
-    if events.empty:
-        return events
-
-    # A NULL release must not overwrite the last usable value.
-    events = events.dropna(
-        subset=["available_date", "observation_date", value_column]
-    ).copy()
-
-    if events.empty:
-        return events
-
-    # If several observations become available on the same day,
-    # keep the newest observation period.
-    events = events.sort_values(["available_date", "observation_date", "id"])
-    events = events.drop_duplicates(
-        subset=["available_date"],
-        keep="last",
+    Both levels are first releases, so the result only uses information that
+    was public on the later of the two release dates. A missing level (e.g.
+    Oct 2025) makes that month's change and the one 12 months later NaN.
+    """
+    year_ago = cpi[["observation_date", "available_date", "value"]].copy()
+    year_ago["observation_date"] = year_ago["observation_date"] + pd.DateOffset(years=1)
+    merged = cpi.merge(
+        year_ago, on="observation_date", how="left", suffixes=("", "_year_ago")
     )
-
-    # Do not allow a later availability event to move us backward
-    # to an older observation period.
-    previous_latest = events["observation_date"].cummax().shift()
-
-    events = events.loc[
-        previous_latest.isna() | (events["observation_date"] > previous_latest)
-    ]
-
-    return events.sort_values("available_date").reset_index(drop=True)
+    merged["value"] = (merged["value"] / merged["value_year_ago"] - 1) * 100
+    merged["available_date"] = merged[
+        ["available_date", "available_date_year_ago"]
+    ].max(axis=1)
+    return merged[["observation_date", "available_date", "value"]]
 
 
-def _build_cpi_yoy(cpi: pd.DataFrame) -> pd.DataFrame:
-    if cpi.empty:
-        return pd.DataFrame(
-            columns=[
-                "id",
-                "observation_date",
-                "available_date",
-                "cpi_yoy_pct",
-            ]
-        )
-
-    # CPIAUCNS is stored as first-release data. If more than one row
-    # somehow exists for a month, use the earliest availability date.
-    cpi = cpi.sort_values(["observation_date", "available_date", "id"]).drop_duplicates(
-        subset=["observation_date"],
-        keep="first",
+def _usable_releases(series: pd.DataFrame) -> pd.DataFrame:
+    """Drop missing values, keep one row per release date, never go back in time."""
+    series = series.dropna(subset=["value"]).sort_values(
+        ["available_date", "observation_date"]
     )
-
-    current = cpi[["id", "observation_date", "available_date", "value"]].rename(
-        columns={
-            "available_date": "current_available_date",
-            "value": "current_value",
-        }
-    )
-
-    previous = cpi[["observation_date", "available_date", "value"]].copy()
-
-    # Move the prior observation forward twelve months so it joins
-    # against the current month's observation_date.
-    previous["observation_date"] = previous["observation_date"] + pd.DateOffset(
-        months=12
-    )
-
-    previous = previous.rename(
-        columns={
-            "available_date": "prior_available_date",
-            "value": "prior_value",
-        }
-    )
-
-    yoy = current.merge(
-        previous,
-        on="observation_date",
-        how="left",
-        validate="one_to_one",
-    )
-
-    yoy["cpi_yoy_pct"] = ((yoy["current_value"] / yoy["prior_value"]) - 1.0) * 100.0
-
-    # If either CPI value is NULL, pandas produces NaN here.
-    missing_value = yoy["current_value"].isna() | yoy["prior_value"].isna()
-    yoy.loc[missing_value, "cpi_yoy_pct"] = float("nan")
-
-    # The derived YoY value is not usable until BOTH source months
-    # were public.
-    yoy["available_date"] = yoy[["current_available_date", "prior_available_date"]].max(
-        axis=1
-    )
-
-    events = yoy[
-        [
-            "id",
-            "observation_date",
-            "available_date",
-            "cpi_yoy_pct",
-        ]
-    ]
-
-    return _keep_forward_moving_events(events, "cpi_yoy_pct")
+    series = series.drop_duplicates("available_date", keep="last")
+    newest_so_far = series["observation_date"].cummax()
+    return series[series["observation_date"] == newest_so_far]
 
 
-def _build_series_events(
+def align_to_trading_dates(
     observations: pd.DataFrame,
-    series_id: str,
-    value_column: str,
+    trading_dates: Iterable[date],
 ) -> pd.DataFrame:
-    events = observations.loc[
-        observations["series_id"] == series_id,
-        [
-            "id",
-            "observation_date",
-            "available_date",
-            "value",
-        ],
-    ].copy()
+    """One row per trading date with each macro feature and its age in days.
 
-    events = events.rename(columns={"value": value_column})
-
-    return _keep_forward_moving_events(events, value_column)
-
-
-def _align_feature(
-    trading_dates: pd.DataFrame,
-    events: pd.DataFrame,
-    value_column: str,
-    age_column: str,
-) -> pd.DataFrame:
-    if events.empty:
-        result = trading_dates.copy()
-        result[value_column] = float("nan")
-        result[age_column] = pd.Series(
-            pd.NA,
-            index=result.index,
-            dtype="Int64",
-        )
-        return result
-
-    right = events[["available_date", value_column]].sort_values("available_date")
-
-    result = pd.merge_asof(
-        trading_dates.sort_values("trading_date"),
-        right,
-        left_on="trading_date",
-        right_on="available_date",
-        direction="backward",
-        allow_exact_matches=False,
-    )
-
-    age = result["trading_date"] - result["available_date"]
-    result[age_column] = age.dt.days.astype("Int64")
-
-    return result[
-        [
-            "trading_date",
-            value_column,
-            age_column,
-        ]
-    ]
-
-
-def _build_macro_features(
-    trading_dates: Iterable[date | datetime | str | pd.Timestamp],
-    session: Session,
-) -> pd.DataFrame:
-    dates = _normalize_trading_dates(trading_dates)
-
-    if dates.empty:
-        return pd.DataFrame(
-            columns=[
-                "trading_date",
-                "cpi_yoy_pct",
-                "cpi_yoy_age_days",
-                "unemployment_rate",
-                "unemployment_rate_age_days",
-                "fed_funds_rate",
-                "fed_funds_rate_age_days",
-            ]
-        )
-
-    observations = _load_macro_observations(session)
-
-    cpi = observations.loc[observations["series_id"] == "CPIAUCNS"].copy()
-
-    cpi_events = _build_cpi_yoy(cpi)
-
-    unemployment_events = _build_series_events(
-        observations,
-        "UNRATE",
-        "unemployment_rate",
-    )
-
-    fed_funds_events = _build_series_events(
-        observations,
-        "DFF",
-        "fed_funds_rate",
-    )
-
-    cpi_aligned = _align_feature(
-        dates,
-        cpi_events,
-        "cpi_yoy_pct",
-        "cpi_yoy_age_days",
-    )
-
-    unemployment_aligned = _align_feature(
-        dates,
-        unemployment_events,
-        "unemployment_rate",
-        "unemployment_rate_age_days",
-    )
-
-    fed_funds_aligned = _align_feature(
-        dates,
-        fed_funds_events,
-        "fed_funds_rate",
-        "fed_funds_rate_age_days",
-    )
+    Accepts plain dates or timestamps. Timezone-aware timestamps (e.g. a
+    yfinance index) are converted to their New York calendar date.
+    """
+    stamps = pd.DatetimeIndex(pd.to_datetime(list(trading_dates)))
+    if stamps.tz is not None:
+        stamps = stamps.tz_convert("America/New_York").tz_localize(None)
+    dates = pd.DataFrame({"date": stamps.normalize().unique().sort_values()})
+    obs = observations.copy()
+    obs["observation_date"] = pd.to_datetime(obs["observation_date"])
+    obs["available_date"] = pd.to_datetime(obs["available_date"])
 
     result = dates.copy()
+    for series_id, feature in FEATURE_NAMES.items():
+        series = obs[obs["series_id"] == series_id]
+        if series_id == "CPIAUCNS":
+            series = cpi_year_over_year(series)
+        series = _usable_releases(series)[["available_date", "value"]]
 
-    result["cpi_yoy_pct"] = cpi_aligned["cpi_yoy_pct"]
-    result["cpi_yoy_age_days"] = cpi_aligned["cpi_yoy_age_days"]
-
-    result["unemployment_rate"] = unemployment_aligned["unemployment_rate"]
-    result["unemployment_rate_age_days"] = unemployment_aligned[
-        "unemployment_rate_age_days"
-    ]
-
-    result["fed_funds_rate"] = fed_funds_aligned["fed_funds_rate"]
-    result["fed_funds_rate_age_days"] = fed_funds_aligned["fed_funds_rate_age_days"]
+        merged = pd.merge_asof(
+            dates,
+            series,
+            left_on="date",
+            right_on="available_date",
+            direction="backward",
+            allow_exact_matches=False,
+        )
+        result[feature] = merged["value"].to_numpy()
+        age = merged["date"] - merged["available_date"]
+        result[f"{feature}_age_days"] = age.dt.days.to_numpy()
 
     return result
 
 
-def build_macro_features(
-    trading_dates: Iterable[date | datetime | str | pd.Timestamp],
-    *,
-    session: Session | None = None,
+def macro_features_for_dates(
+    session: Session,
+    trading_dates: Iterable[date],
 ) -> pd.DataFrame:
-    if session is not None:
-        return _build_macro_features(trading_dates, session)
-
-    with Session(engine) as database_session:
-        return _build_macro_features(
-            trading_dates,
-            database_session,
-        )
-
-
-def _quick_check_dates() -> list[pd.Timestamp]:
-    # CLI smoke-test dates only. The production/ML path should pass
-    # the actual trading dates from the stock dataset.
-    return list(
-        pd.bdate_range(
-            end=pd.Timestamp.today().normalize(),
-            periods=10,
-        )
-    )
-
-
-def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Quick-check point-in-time macro features."
-    )
-    parser.add_argument(
-        "symbol",
-        help=("Ticker label for the quick check. " "No stock table is queried."),
-    )
-    args = parser.parse_args()
-
-    features = build_macro_features(_quick_check_dates())
-
-    print(f"{args.symbol} macro feature quick check")
-    print(features.to_string(index=False))
+    """Load stored observations and align them to the given trading dates."""
+    return align_to_trading_dates(load_macro_observations(session), trading_dates)
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+
+    import yfinance as yf
+
+    from app.database import get_session
+
+    ticker = sys.argv[1] if len(sys.argv) > 1 else "LMT"
+    history = yf.Ticker(ticker).history(period="2y", auto_adjust=False)
+    trading_dates = [timestamp.date() for timestamp in history.index]
+
+    with get_session() as session:
+        features = macro_features_for_dates(session, trading_dates)
+
+    print(features.tail(10).to_string(index=False))
