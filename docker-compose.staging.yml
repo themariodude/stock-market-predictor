@@ -25,6 +25,7 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       FRED_API_KEY: ${FRED_API_KEY:-}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      CORS_ORIGINS: ${CORS_ORIGINS}
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     depends_on:
