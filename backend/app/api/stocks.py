@@ -98,6 +98,22 @@ def stock_prediction_direction(ticker: str) -> dict:
         **result,
     }
 
+@router.get("/{ticker}/prediction")
+def stock_prediction(ticker: str) -> dict:
+    """Generate ML stock-price predictions for a supported stock."""
+    symbol = validate_supported_ticker(ticker)
+
+    try:
+        result = get_stock_prediction(symbol)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except StockPredictionError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    return {
+        "company_name": SUPPORTED_STOCKS[symbol],
+        **result,
+    }
 
 @router.get("/{ticker}")
 def stock_details(ticker: str) -> dict:
@@ -115,19 +131,6 @@ def stock_details(ticker: str) -> dict:
         "company_name": SUPPORTED_STOCKS[symbol],
         **result,
     }
-@router.get("/{ticker}")
-def stock_details(ticker: str) -> dict:
-    """Return current market information for a supported stock."""
-    symbol = validate_supported_ticker(ticker)
 
-    try:
-        result = get_current_stock_info(symbol)
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-    except StockDataError as exc:
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
 
-    return {
-        "company_name": SUPPORTED_STOCKS[symbol],
-        **result,
-    }
+
