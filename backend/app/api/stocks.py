@@ -22,7 +22,6 @@ from app.services.prediction_direction import (
     PredictionDirectionError,
     get_prediction_direction,
 )
-
 from app.services.stock_prediction import (
     StockPredictionError,
     get_stock_prediction,

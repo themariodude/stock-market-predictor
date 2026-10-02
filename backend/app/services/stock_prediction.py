@@ -10,6 +10,7 @@ from typing import Any
 
 import numpy as np
 from sklearn.linear_model import LinearRegression
+
 from app.services.historical_stock_data import (
     HistoricalStockDataError,
     get_historical_stock_data,

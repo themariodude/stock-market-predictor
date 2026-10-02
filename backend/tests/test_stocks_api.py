@@ -5,6 +5,7 @@ from app.services.current_stock_info import StockDataError
 from app.services.historical_stock_data import HistoricalStockDataError
 from app.services.prediction_direction import PredictionDirectionError
 from app.services.stock_prediction import StockPredictionError
+
 client = TestClient(app)
 
 
