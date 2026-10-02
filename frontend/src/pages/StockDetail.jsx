@@ -67,9 +67,6 @@ function StockDetail() {
     prediction?.prediction_direction.toLowerCase() ?? "";
   const hasPredictionConfidence =
     typeof prediction?.prediction_confidence === "number";
-  const economicFactors = Array.isArray(prediction?.economic_factors)
-    ? prediction.economic_factors
-    : [];
 
   return (
     <main className="stock-detail-page">
@@ -133,37 +130,6 @@ function StockDetail() {
           <p className="prediction-error">{predictionError}</p>
         )}
       </section>
-
-      {!isPredictionLoading && prediction && (
-        <section className="economic-factors" aria-labelledby="economic-factors-title">
-          <h2 id="economic-factors-title">Economic Context</h2>
-          <p>
-            Published indicators available before the latest closing price used
-            for this forecast
-            {prediction.as_of_date ? ` on ${prediction.as_of_date}` : ""}.
-            The forecast uses recent stock prices; these indicators provide
-            context rather than a measure of their effect on it.
-          </p>
-
-          {economicFactors.length > 0 ? (
-            <ul className="factor-list">
-              {economicFactors.map((factor) => (
-                <li className="factor-card" key={factor.id}>
-                  <span>{factor.name}</span>
-                  <strong>
-                    {factor.value.toFixed(2)}{factor.unit}
-                  </strong>
-                  <small>Published {factor.published_on}</small>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="factor-empty">
-              Economic factor data is not available for this forecast.
-            </p>
-          )}
-        </section>
-      )}
 
       <section className="stock-history">
         <div className="chart-header">
