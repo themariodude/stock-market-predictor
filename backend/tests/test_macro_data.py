@@ -4,11 +4,11 @@ from unittest.mock import MagicMock
 
 import pytest
 import requests
+from app.models.source_status import DataSourceStatus
 from sqlalchemy import create_engine, func, select
 from sqlalchemy.orm import Session
 
 from app.models.macro import MacroObservation
-from app.models.source_status import DataSourceStatus
 from app.services import macro_data
 
 FAKE_KEY = "a" * 32
@@ -31,6 +31,7 @@ def db_session():
     engine = create_engine("sqlite+pysqlite:///:memory:")
     MacroObservation.__table__.create(engine)
     DataSourceStatus.__table__.create(engine)
+
     with Session(engine) as session:
         yield session
 

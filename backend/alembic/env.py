@@ -5,7 +5,6 @@ from alembic import context
 from sqlalchemy import create_engine, pool
 
 import app.models.macro  # noqa: F401  (registers MacroObservation on Base)
-import app.models.source_status  # noqa: F401  (registers DataSourceStatus on Base)
 from app.database import Base
 
 config = context.config
@@ -21,7 +20,7 @@ target_metadata = Base.metadata
 
 # Alembic manages only these tables. Other models on Base (stocks,
 # stock_prices) are left untouched until the team adopts migrations for them.
-MANAGED_TABLES = {"macro_observations", "data_source_status"}
+MANAGED_TABLES = {"macro_observations"}
 
 
 def include_object(obj, name, type_, reflected, compare_to):
