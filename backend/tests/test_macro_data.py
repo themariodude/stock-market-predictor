@@ -4,11 +4,11 @@ from unittest.mock import MagicMock
 
 import pytest
 import requests
-from app.models.source_status import DataSourceStatus
 from sqlalchemy import create_engine, func, select
 from sqlalchemy.orm import Session
 
 from app.models.macro import MacroObservation
+from app.models.source_status import DataSourceStatus
 from app.services import macro_data
 
 FAKE_KEY = "a" * 32
