@@ -8,6 +8,7 @@ from sqlalchemy import create_engine, func, select
 from sqlalchemy.orm import Session
 
 from app.models.macro import MacroObservation
+from app.models.source_status import DataSourceStatus
 from app.services import macro_data
 
 FAKE_KEY = "a" * 32
@@ -29,6 +30,8 @@ def mock_http(status_code=200, payload=None):
 def db_session():
     engine = create_engine("sqlite+pysqlite:///:memory:")
     MacroObservation.__table__.create(engine)
+    DataSourceStatus.__table__.create(engine)
+
     with Session(engine) as session:
         yield session
 

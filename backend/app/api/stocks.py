@@ -14,6 +14,7 @@ from app.services.current_stock_info import (
     StockDataError,
     get_current_stock_info,
 )
+from app.services.economic_factors import get_economic_factors
 from app.services.historical_stock_data import (
     HistoricalStockDataError,
     get_historical_stock_data,
@@ -21,6 +22,14 @@ from app.services.historical_stock_data import (
 from app.services.prediction_direction import (
     PredictionDirectionError,
     get_prediction_direction,
+)
+from app.services.stock_prediction import (
+    StockPredictionError,
+    get_stock_prediction,
+)
+from app.services.ticker_validation import (
+    UnsupportedTickerError,
+    validate_ticker,
 )
 
 router = APIRouter(prefix="/stocks", tags=["stocks"])
@@ -37,15 +46,14 @@ SUPPORTED_STOCKS = {
 
 
 def validate_supported_ticker(ticker: str) -> str:
-    symbol = ticker.strip().upper()
-
-    if symbol not in SUPPORTED_STOCKS:
+    """Validate a ticker and convert validation failures into HTTP errors."""
+    try:
+        return validate_ticker(ticker)
+    except UnsupportedTickerError as exc:
         raise HTTPException(
             status_code=404,
-            detail=f"Unsupported stock ticker: {symbol}",
-        )
-
-    return symbol
+            detail=str(exc),
+        ) from exc
 
 
 @router.get("")
@@ -86,6 +94,25 @@ def stock_prediction_direction(ticker: str) -> dict:
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except PredictionDirectionError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    return {
+        "company_name": SUPPORTED_STOCKS[symbol],
+        **result,
+        "economic_factors": get_economic_factors(result.get("as_of_date")),
+    }
+
+
+@router.get("/{ticker}/prediction")
+def stock_prediction(ticker: str) -> dict:
+    """Generate ML stock-price predictions for a supported stock."""
+    symbol = validate_supported_ticker(ticker)
+
+    try:
+        result = get_stock_prediction(symbol)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except StockPredictionError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
     return {
