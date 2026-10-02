@@ -12,6 +12,9 @@ function StockDetail() {
   const [prediction, setPrediction] = useState(null);
   const [predictionError, setPredictionError] = useState("");
   const [isPredictionLoading, setIsPredictionLoading] = useState(true);
+  const [history, setHistory] = useState([]);
+  const [historyError, setHistoryError] = useState("");
+  const [isHistoryLoading, setIsHistoryLoading] = useState(true);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -49,20 +52,46 @@ function StockDetail() {
     return () => controller.abort();
   }, [ticker]);
 
-  const history = [
-    { date: "2023-11-21", close: 492.56 },
-    { date: "2024-05-01", close: 512.93 },
-    { date: "2024-12-23", close: 507.12 },
-    { date: "2025-01-02", close: 482.14 },
-    { date: "2025-04-01", close: 471.83 },
-    { date: "2025-07-01", close: 463.72 },
-    { date: "2025-10-01", close: 489.31 },
-    { date: "2026-01-02", close: 501.44 },
-    { date: "2026-04-01", close: 493.26 },
-    { date: "2026-07-01", close: 507.19 },
-    { date: "2026-09-01", close: 512.37 },
-    { date: "2026-09-13", close: 519.59 },
-  ];
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function loadHistory() {
+      setIsHistoryLoading(true);
+      setHistoryError("");
+      setHistory([]);
+
+      try {
+        const response = await fetch(
+          `${API_BASE_URL}/stocks/${ticker}/history?time_range=${range}`,
+          { signal: controller.signal },
+        );
+
+        if (!response.ok) {
+          throw new Error("Historical data is unavailable.");
+        }
+
+        const result = await response.json();
+        if (!Array.isArray(result.data)) {
+          throw new Error("Historical data is unavailable.");
+        }
+
+        setHistory(result.data);
+      } catch (error) {
+        if (error.name !== "AbortError") {
+          setHistoryError(error.message);
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsHistoryLoading(false);
+        }
+      }
+    }
+
+    loadHistory();
+
+    return () => controller.abort();
+  }, [ticker, range]);
+
   const predictionDirectionClass =
     prediction?.prediction_direction.toLowerCase() ?? "";
   const hasPredictionConfidence =
@@ -175,7 +204,13 @@ function StockDetail() {
           />
         </div>
 
-        <StockChart data={history} range={range} />
+        {isHistoryLoading && <p>Loading historical data...</p>}
+        {!isHistoryLoading && historyError && (
+          <p className="history-error">{historyError}</p>
+        )}
+        {!isHistoryLoading && !historyError && (
+          <StockChart data={history} range={range} prediction={prediction} />
+        )}
       </section>
     </main>
   );
