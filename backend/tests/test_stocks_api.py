@@ -190,6 +190,7 @@ def test_prediction_direction_service_failure_returns_502(monkeypatch):
     assert response.status_code == 502
     assert response.json() == {"detail": "Prediction unavailable"}
 
+
 def test_stock_prediction_success(monkeypatch):
     fake_result = {
         "ticker": "LMT",

@@ -100,6 +100,7 @@ def stock_prediction_direction(ticker: str) -> dict:
         **result,
     }
 
+
 @router.get("/{ticker}/prediction")
 def stock_prediction(ticker: str) -> dict:
     """Generate ML stock-price predictions for a supported stock."""
@@ -117,6 +118,7 @@ def stock_prediction(ticker: str) -> dict:
         **result,
     }
 
+
 @router.get("/{ticker}")
 def stock_details(ticker: str) -> dict:
     """Return current market information for a supported stock."""
@@ -133,6 +135,3 @@ def stock_details(ticker: str) -> dict:
         "company_name": SUPPORTED_STOCKS[symbol],
         **result,
     }
-
-
-

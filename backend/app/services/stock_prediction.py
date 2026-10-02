@@ -34,9 +34,7 @@ def prepare_prediction_data(
     closing price.
     """
     if not records or len(records) < 3:
-        raise ValueError(
-            "At least three historical stock records are required."
-        )
+        raise ValueError("At least three historical stock records are required.")
 
     features: list[list[float]] = []
     targets: list[float] = []
@@ -47,10 +45,7 @@ def prepare_prediction_data(
         next_record = records[index + 1]
 
         try:
-            feature_row = [
-                float(current[column])
-                for column in FEATURE_COLUMNS
-            ]
+            feature_row = [float(current[column]) for column in FEATURE_COLUMNS]
             target = float(next_record["close"])
             target_date = str(next_record["date"])
         except (KeyError, TypeError, ValueError) as exc:
@@ -83,7 +78,7 @@ def train_and_predict(
 
     split_index = int(len(features) * train_ratio)
 
-    #Requires at least 2 training examples
+    # Requires at least 2 training examples
     if split_index < 2 or split_index >= len(features):
         raise StockPredictionError(
             "Insufficient data to create training and test sets."
@@ -108,8 +103,8 @@ def train_and_predict(
         "predictions": predictions.tolist(),
     }
 
-#Wrapper
 
+# Wrapper
 
 
 def get_stock_prediction(ticker: str) -> dict[str, Any]:

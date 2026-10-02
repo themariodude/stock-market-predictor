@@ -134,6 +134,7 @@ def test_train_and_predict_rejects_split_with_no_test_data():
             train_ratio=0.99,
         )
 
+
 def test_get_stock_prediction_uses_historical_pipeline(monkeypatch):
     records = sample_records()
 
