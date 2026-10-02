@@ -129,6 +129,7 @@ def test_stock_prediction_direction_success(monkeypatch):
     assert response.json() == {
         "company_name": "Lockheed Martin",
         **fake_result,
+        "economic_factors": [],
     }
 
 
