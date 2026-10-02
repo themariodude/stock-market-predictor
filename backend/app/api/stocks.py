@@ -22,10 +22,6 @@ from app.services.prediction_direction import (
     PredictionDirectionError,
     get_prediction_direction,
 )
-from app.services.ticker_validation import (
-    UnsupportedTickerError,
-    validate_ticker,
-)
 
 router = APIRouter(prefix="/stocks", tags=["stocks"])
 
@@ -41,14 +37,15 @@ SUPPORTED_STOCKS = {
 
 
 def validate_supported_ticker(ticker: str) -> str:
-    """Validate a ticker and convert validation failures into HTTP errors."""
-    try:
-        return validate_ticker(ticker)
-    except UnsupportedTickerError as exc:
+    symbol = ticker.strip().upper()
+
+    if symbol not in SUPPORTED_STOCKS:
         raise HTTPException(
             status_code=404,
-            detail=str(exc),
-        ) from exc
+            detail=f"Unsupported stock ticker: {symbol}",
+        )
+
+    return symbol
 
 
 @router.get("")
