@@ -4,6 +4,7 @@ from app.main import app
 from app.services.current_stock_info import StockDataError
 from app.services.historical_stock_data import HistoricalStockDataError
 from app.services.prediction_direction import PredictionDirectionError
+from app.services.stock_prediction import StockPredictionError
 
 client = TestClient(app)
 
@@ -185,6 +186,59 @@ def test_prediction_direction_service_failure_returns_502(monkeypatch):
     )
 
     response = client.get("/stocks/LMT/prediction-direction")
+
+    assert response.status_code == 502
+    assert response.json() == {"detail": "Prediction unavailable"}
+
+
+def test_stock_prediction_success(monkeypatch):
+    fake_result = {
+        "ticker": "LMT",
+        "model": "LinearRegression",
+        "training_count": 200,
+        "test_count": 50,
+        "dates": [
+            "2026-09-29",
+            "2026-09-30",
+        ],
+        "actual": [
+            482.50,
+            485.25,
+        ],
+        "predictions": [
+            481.75,
+            484.90,
+        ],
+    }
+
+    def fake_stock_prediction(ticker):
+        assert ticker == "LMT"
+        return fake_result
+
+    monkeypatch.setattr(
+        "app.api.stocks.get_stock_prediction",
+        fake_stock_prediction,
+    )
+
+    response = client.get("/stocks/lmt/prediction")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "company_name": "Lockheed Martin",
+        **fake_result,
+    }
+
+
+def test_stock_prediction_service_failure_returns_502(monkeypatch):
+    def fake_stock_prediction(ticker):
+        raise StockPredictionError("Prediction unavailable")
+
+    monkeypatch.setattr(
+        "app.api.stocks.get_stock_prediction",
+        fake_stock_prediction,
+    )
+
+    response = client.get("/stocks/LMT/prediction")
 
     assert response.status_code == 502
     assert response.json() == {"detail": "Prediction unavailable"}

@@ -22,6 +22,10 @@ from app.services.prediction_direction import (
     PredictionDirectionError,
     get_prediction_direction,
 )
+from app.services.stock_prediction import (
+    StockPredictionError,
+    get_stock_prediction,
+)
 from app.services.ticker_validation import (
     UnsupportedTickerError,
     validate_ticker,
@@ -89,6 +93,24 @@ def stock_prediction_direction(ticker: str) -> dict:
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except PredictionDirectionError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    return {
+        "company_name": SUPPORTED_STOCKS[symbol],
+        **result,
+    }
+
+
+@router.get("/{ticker}/prediction")
+def stock_prediction(ticker: str) -> dict:
+    """Generate ML stock-price predictions for a supported stock."""
+    symbol = validate_supported_ticker(ticker)
+
+    try:
+        result = get_stock_prediction(symbol)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except StockPredictionError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
     return {
