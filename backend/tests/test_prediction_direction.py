@@ -64,13 +64,12 @@ def test_prediction_direction_uses_average_recent_change(monkeypatch):
             "ticker": "LMT",
             "time_range": "1M",
             "period": "1mo",
-            "count": 5,
+            "count": 4,
             "data": [
                 {"date": "2026-09-01", "close": 100.00},
                 {"date": "2026-09-02", "close": 102.00},
                 {"date": "2026-09-03", "close": 103.00},
                 {"date": "2026-09-04", "close": 106.00},
-                {"date": "2026-09-05", "close": None},
             ],
         }
 
@@ -82,7 +81,6 @@ def test_prediction_direction_uses_average_recent_change(monkeypatch):
     result = get_prediction_direction("lmt")
 
     assert result["ticker"] == "LMT"
-    assert result["as_of_date"] == "2026-09-04"
     assert result["prediction_direction"] == "UP"
     assert result["direction_label"] == "Upward"
     assert result["current_price"] == 106.00

@@ -194,49 +194,6 @@ button {
   color: #ffb3b3;
 }
 
-.economic-factors {
-  margin-top: 2rem;
-  padding: 1.5rem;
-  border: 1px solid #2d3742;
-  border-radius: 8px;
-  background: #131c26;
-}
-
-.economic-factors h2 {
-  margin-top: 0;
-}
-
-.economic-factors > p,
-.factor-card small {
-  color: #aeb9c5;
-}
-
-.factor-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-  gap: 1rem;
-  padding: 0;
-  list-style: none;
-}
-
-.factor-card {
-  padding: 1rem;
-  border: 1px solid #2d3742;
-  border-radius: 8px;
-  background: #18232e;
-}
-
-.factor-card span,
-.factor-card strong,
-.factor-card small {
-  display: block;
-}
-
-.factor-card strong {
-  margin: 0.4rem 0;
-  font-size: 1.25rem;
-}
-
 .stock-history {
   margin-top: 2rem;
   padding: 1.5rem;
