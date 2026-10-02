@@ -257,6 +257,15 @@ button {
   width: 100%;
 }
 
+.chart-note {
+  margin-bottom: 0;
+  color: #aeb9c5;
+}
+
+.history-error {
+  color: #ffb3b3;
+}
+
 .time-range-selector {
   display: flex;
   gap: 0.5rem;
