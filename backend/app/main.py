@@ -11,6 +11,7 @@ import logging
 import os
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import create_engine, text
 
 from app.api.models import router as models_router
@@ -23,6 +24,23 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 app = FastAPI(title="Stock Market Predictor API", version="0.1.1")
+
+cors_origins = [
+    origin.strip()
+    for origin in os.getenv(
+        "CORS_ORIGINS",
+        "http://localhost:5173",
+    ).split(",")
+    if origin.strip()
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 DATABASE_URL = os.getenv("DATABASE_URL", "")
 _engine = create_engine(DATABASE_URL, pool_pre_ping=True) if DATABASE_URL else None

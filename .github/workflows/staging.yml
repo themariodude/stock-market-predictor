@@ -1,0 +1,162 @@
+name: Staging Deploy
+
+on:
+  push:
+    branches:
+      - develop
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  secrets-scan:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Scan for leaked secrets
+        uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  backend-checks:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Upgrade pip
+        run: python -m pip install --upgrade pip
+
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Lint Python
+        run: ruff check app tests
+
+      - name: Check formatting
+        run: ruff format --check app tests
+
+      - name: Run tests
+        run: pytest
+
+  build-and-push:
+    needs:
+      - secrets-scan
+      - backend-checks
+
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build backend image
+        run: |
+          docker build \
+            -f infra/docker/Dockerfile.backend \
+            -t ghcr.io/${{ github.repository_owner }}/stock-market-predictor-backend:${{ github.sha }} \
+            .
+
+      - name: Build frontend image
+        run: |
+          docker build \
+            -f infra/docker/Dockerfile.frontend \
+            -t ghcr.io/${{ github.repository_owner }}/stock-market-predictor-frontend:${{ github.sha }} \
+            .
+
+      - name: Push backend image
+        run: |
+          docker push \
+            ghcr.io/${{ github.repository_owner }}/stock-market-predictor-backend:${{ github.sha }}
+
+      - name: Push frontend image
+        run: |
+          docker push \
+            ghcr.io/${{ github.repository_owner }}/stock-market-predictor-frontend:${{ github.sha }}
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Deploy to staging through SSM
+        env:
+          INSTANCE_ID: ${{ secrets.STAGING_INSTANCE_ID }}
+          IMAGE_TAG: ${{ github.sha }}
+
+        run: |
+          cat > /tmp/ssm-parameters.json <<EOF
+          {
+            "commands": [
+              "set -e",
+              "cd /opt/stock-market-predictor",
+              "sed -i 's/^IMAGE_TAG=.*/IMAGE_TAG=${IMAGE_TAG}/' .env",
+              "docker compose --env-file .env -f docker-compose.staging.yml pull",
+              "docker compose --env-file .env -f docker-compose.staging.yml up -d --remove-orphans",
+              "for i in \$(seq 1 12); do curl -fsS http://localhost:8000/health && break; sleep 5; done",
+              "curl -fsS http://localhost:8000/health",
+              "for i in \$(seq 1 12); do curl -fsS http://localhost:5173/ >/dev/null && break; sleep 5; done",
+              "curl -fsS http://localhost:5173/ >/dev/null",
+              "docker compose --env-file .env -f docker-compose.staging.yml ps"
+            ]
+          }
+          EOF
+
+          COMMAND_ID=$(aws ssm send-command \
+            --instance-ids "$INSTANCE_ID" \
+            --document-name "AWS-RunShellScript" \
+            --parameters file:///tmp/ssm-parameters.json \
+            --query "Command.CommandId" \
+            --output text)
+
+          echo "SSM command ID: $COMMAND_ID"
+
+          aws ssm wait command-executed \
+            --command-id "$COMMAND_ID" \
+            --instance-id "$INSTANCE_ID"
+
+          aws ssm get-command-invocation \
+            --command-id "$COMMAND_ID" \
+            --instance-id "$INSTANCE_ID" \
+            --query '{Status:Status,Output:StandardOutputContent,Errors:StandardErrorContent}'
