@@ -15,6 +15,8 @@ from sqlalchemy import create_engine, text
 
 from app.api.stocks import router as stocks_router
 
+from app.api.models import router as models_router
+
 logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO"),
     format="%(asctime)s %(levelname)s %(name)s %(message)s",
@@ -43,3 +45,5 @@ def health() -> dict:
 
 
 app.include_router(stocks_router)
+
+app.include_router(models_router)
