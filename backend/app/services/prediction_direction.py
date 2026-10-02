@@ -11,6 +11,7 @@ from app.services.historical_stock_data import (
     HistoricalStockDataError,
     get_historical_stock_data,
 )
+from app.services.ticker_validation import validate_ticker
 
 
 class PredictionDirectionError(Exception):
@@ -108,18 +109,14 @@ def get_prediction_direction(ticker: str) -> dict[str, Any]:
     forecast. A trained model can replace this calculation while preserving
     the response shape used by the API and frontend.
     """
-    if not ticker or not ticker.strip():
-        raise ValueError("Ticker symbol is required.")
-
-    symbol = ticker.strip().upper()
+    symbol = validate_ticker(ticker)
 
     try:
         history = get_historical_stock_data(symbol, "1M")
-        closes = [
-            float(record["close"])
-            for record in history["data"]
-            if record.get("close") is not None
+        priced_records = [
+            record for record in history["data"] if record.get("close") is not None
         ]
+        closes = [float(record["close"]) for record in priced_records]
 
         if len(closes) < 2:
             raise PredictionDirectionError(
@@ -145,6 +142,7 @@ def get_prediction_direction(ticker: str) -> dict[str, Any]:
 
         return {
             "ticker": symbol,
+            "as_of_date": priced_records[-1].get("date"),
             "prediction_direction": direction,
             "direction_label": DIRECTION_LABELS[direction],
             "current_price": round(current_price, 2),
