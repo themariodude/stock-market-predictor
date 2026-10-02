@@ -14,6 +14,7 @@ from app.services.current_stock_info import (
     StockDataError,
     get_current_stock_info,
 )
+from app.services.economic_factors import get_economic_factors
 from app.services.historical_stock_data import (
     HistoricalStockDataError,
     get_historical_stock_data,
@@ -94,6 +95,7 @@ def stock_prediction_direction(ticker: str) -> dict:
     return {
         "company_name": SUPPORTED_STOCKS[symbol],
         **result,
+        "economic_factors": get_economic_factors(result.get("as_of_date")),
     }
 
 

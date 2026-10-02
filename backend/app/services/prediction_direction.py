@@ -113,11 +113,10 @@ def get_prediction_direction(ticker: str) -> dict[str, Any]:
 
     try:
         history = get_historical_stock_data(symbol, "1M")
-        closes = [
-            float(record["close"])
-            for record in history["data"]
-            if record.get("close") is not None
+        priced_records = [
+            record for record in history["data"] if record.get("close") is not None
         ]
+        closes = [float(record["close"]) for record in priced_records]
 
         if len(closes) < 2:
             raise PredictionDirectionError(
@@ -143,6 +142,7 @@ def get_prediction_direction(ticker: str) -> dict[str, Any]:
 
         return {
             "ticker": symbol,
+            "as_of_date": priced_records[-1].get("date"),
             "prediction_direction": direction,
             "direction_label": DIRECTION_LABELS[direction],
             "current_price": round(current_price, 2),
