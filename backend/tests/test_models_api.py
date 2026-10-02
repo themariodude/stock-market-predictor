@@ -48,16 +48,12 @@ def test_model_metrics_unavailable(monkeypatch):
     response = client.get("/models/metrics")
 
     assert response.status_code == 503
-    assert response.json() == {
-        "detail": "Model performance metrics are not available."
-    }
+    assert response.json() == {"detail": "Model performance metrics are not available."}
 
 
 def test_invalid_model_metrics(monkeypatch):
     def invalid():
-        raise InvalidModelMetricsError(
-            "Model metrics are malformed."
-        )
+        raise InvalidModelMetricsError("Model metrics are malformed.")
 
     monkeypatch.setattr(
         "app.api.models.load_model_metrics",
@@ -67,9 +63,7 @@ def test_invalid_model_metrics(monkeypatch):
     response = client.get("/models/metrics")
 
     assert response.status_code == 502
-    assert response.json() == {
-        "detail": "Model metrics are malformed."
-    }
+    assert response.json() == {"detail": "Model metrics are malformed."}
 
 
 def test_metrics_failure_does_not_break_api(monkeypatch):

@@ -25,9 +25,7 @@ REQUIRED_METRICS = frozenset(
 def validate_model_metrics(metrics: dict) -> dict:
     """Validate model-versus-baseline performance metrics."""
     if not isinstance(metrics, dict):
-        raise InvalidModelMetricsError(
-            "Model metrics response must be an object."
-        )
+        raise InvalidModelMetricsError("Model metrics response must be an object.")
 
     missing_models = REQUIRED_MODELS - metrics.keys()
 

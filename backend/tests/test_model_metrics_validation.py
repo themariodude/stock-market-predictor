@@ -138,4 +138,3 @@ def test_boolean_is_not_valid_metric():
         match="must be numeric",
     ):
         validate_model_metrics(metrics)
-        
