@@ -1,0 +1,45 @@
+
+.favorite-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  padding: 10px 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+
+  background-color: #ffffff;
+  color: #374151;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.favorite-button:hover {
+  background-color: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.favorite-button.favorited {
+  background-color: #fef3c7;
+  border-color: #f59e0b;
+  color: #92400e;
+}
+
+.favorite-button.favorited:hover {
+  background-color: #fde68a;
+}
+
+.favorite-button:focus-visible {
+  outline: 3px solid #2563eb;
+  outline-offset: 3px;
+}
+
+.favorite-star {
+  font-size: 20px;
+  line-height: 1;
+}
