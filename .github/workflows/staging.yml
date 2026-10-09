@@ -160,3 +160,23 @@ jobs:
             --command-id "$COMMAND_ID" \
             --instance-id "$INSTANCE_ID" \
             --query '{Status:Status,Output:StandardOutputContent,Errors:StandardErrorContent}'
+
+  smoke-test:
+    needs: deploy
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run post-deployment smoke tests
+        env:
+          SMOKE_BACKEND_URL: ${{ secrets.STAGING_BACKEND_URL }}
+          SMOKE_FRONTEND_URL: ${{ secrets.STAGING_FRONTEND_URL }}
+        run: |
+          : "${SMOKE_BACKEND_URL:?STAGING_BACKEND_URL secret is not set}"
+          : "${SMOKE_FRONTEND_URL:?STAGING_FRONTEND_URL secret is not set}"
+          python3 scripts/smoke_test.py
