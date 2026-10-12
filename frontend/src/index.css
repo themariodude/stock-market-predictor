@@ -46,9 +46,32 @@ button {
   display: inline-block;
   margin-top: 1rem;
   padding: 0.75rem 1.5rem;
+  border: 0;
   border-radius: 8px;
   background: #ffffff;
   color: #111111;
+}
+
+.primary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.secondary-button {
+  padding: 0.65rem 1rem;
+  border: 1px solid #3a4653;
+  border-radius: 6px;
+  background: #18232e;
+  color: #ffffff;
+}
+
+.home-login-link {
+  display: inline-block;
+  margin-left: 1rem;
+  padding: 0.75rem 1.5rem;
+  border: 1px solid #3a4653;
+  border-radius: 8px;
+  color: #ffffff;
 }
 
 /* Dashboard */
@@ -57,7 +80,8 @@ button {
   padding: 2rem;
 }
 
-.back-button {
+.back-button,
+.account-link {
   display: inline-block;
   margin-bottom: 1.5rem;
   padding: 0.6rem 1rem;
@@ -69,6 +93,10 @@ button {
   color: #ffffff;
 
   text-decoration: none;
+}
+
+.account-link {
+  margin-left: 1rem;
 }
 
 .stock-grid {
@@ -284,9 +312,110 @@ button {
   color: #111111;
 }
 
+/* Auth */
+
+.auth-page,
+.account-page {
+  min-height: 100vh;
+  padding: 2rem;
+}
+
+.auth-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.auth-panel,
+.account-summary {
+  width: 100%;
+  max-width: 520px;
+  padding: 1.5rem;
+  border: 1px solid #2d3742;
+  border-radius: 8px;
+  background: #131c26;
+}
+
+.auth-panel h1,
+.auth-panel p {
+  margin-top: 0;
+}
+
+.auth-copy,
+.form-error,
+.account-summary span {
+  color: #aeb9c5;
+}
+
+.login-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.login-form label,
+.account-summary div {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.login-form input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #3a4653;
+  border-radius: 6px;
+  background: #0b1118;
+  color: #ffffff;
+  font: inherit;
+}
+
+.form-error {
+  margin: 0;
+  color: #ffb3b3;
+}
+
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  max-width: 760px;
+}
+
+.page-header h1 {
+  margin-top: 0;
+}
+
+.account-summary {
+  display: grid;
+  gap: 1.25rem;
+  max-width: 760px;
+}
+
+.account-summary strong {
+  font-size: 1.05rem;
+}
+
+.saved-stocks ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.saved-stocks a {
+  display: inline-block;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #3a4653;
+  border-radius: 6px;
+  background: #18232e;
+}
+
 @media (max-width: 720px) {
   .prediction-direction,
-  .chart-header {
+  .chart-header,
+  .page-header {
     align-items: flex-start;
     flex-direction: column;
   }
@@ -294,5 +423,10 @@ button {
   .prediction-metrics {
     justify-content: flex-start;
     width: 100%;
+  }
+
+  .home-login-link,
+  .account-link {
+    margin-left: 0;
   }
 }

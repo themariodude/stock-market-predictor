@@ -31,6 +31,9 @@ function Home() {
         <Link to="/dashboard">
           <button>Explore Stocks</button>
         </Link>
+        <Link to="/login" className="home-login-link">
+          Log In
+        </Link>
       </section>
       
       <section className="features">
