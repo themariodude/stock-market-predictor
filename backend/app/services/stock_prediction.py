@@ -9,7 +9,6 @@ data.
 from typing import Any
 
 import numpy as np
-from sklearn.linear_model import LinearRegression
 
 from app.services.historical_stock_data import (
     HistoricalStockDataError,
@@ -22,6 +21,42 @@ class StockPredictionError(Exception):
 
 
 FEATURE_COLUMNS = ("open", "high", "low", "close", "volume")
+
+
+class NumpyLinearRegression:
+    """Small fallback when scikit-learn is unavailable locally."""
+
+    def __init__(self) -> None:
+        self.weights: np.ndarray | None = None
+
+    def fit(self, features: np.ndarray, targets: np.ndarray) -> "NumpyLinearRegression":
+        design_matrix = np.column_stack(
+            [np.ones(features.shape[0]), features],
+        )
+        self.weights = np.linalg.lstsq(
+            design_matrix,
+            targets,
+            rcond=None,
+        )[0]
+        return self
+
+    def predict(self, features: np.ndarray) -> np.ndarray:
+        if self.weights is None:
+            raise StockPredictionError("Prediction model has not been trained.")
+
+        design_matrix = np.column_stack(
+            [np.ones(features.shape[0]), features],
+        )
+        return design_matrix @ self.weights
+
+
+def _linear_regression_model() -> Any:
+    try:
+        from sklearn.linear_model import LinearRegression
+    except ImportError:
+        return NumpyLinearRegression()
+
+    return LinearRegression()
 
 
 def prepare_prediction_data(
@@ -89,7 +124,7 @@ def train_and_predict(
     y_train = targets[:split_index]
     y_test = targets[split_index:]
 
-    model = LinearRegression()
+    model = _linear_regression_model()
     model.fit(x_train, y_train)
 
     predictions = model.predict(x_test)
