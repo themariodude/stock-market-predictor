@@ -1,16 +1,46 @@
-from fastapi import APIRouter, Header, HTTPException, status
-from pydantic import BaseModel, Field
+from collections.abc import Generator
 
+from fastapi import APIRouter, Depends, Header, HTTPException, status
+from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
+
+from app.database import get_session
 from app.services.auth import (
     TOKEN_TTL_SECONDS,
     AuthenticationError,
+    DuplicateAccountError,
     RegisteredInvestor,
     authenticate_investor,
     create_access_token,
+    register_investor,
     verify_access_token,
 )
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+#Database session dependency
+def get_db() -> Generator[Session, None, None]:
+    """Provide a database session and close it after the request."""
+    db = get_session()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+class RegisterRequest(BaseModel):
+    name: str = Field(
+        min_length=1,
+        max_length=255,
+        pattern=r".*\S.*",
+    )
+    email: str = Field(
+        min_length=3,
+        max_length=255,
+        pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$",
+    )
+    password: str = Field(min_length=8, max_length=128)
 
 
 class LoginRequest(BaseModel):
@@ -23,6 +53,11 @@ class AccountResponse(BaseModel):
     name: str
     saved_stocks: list[str]
     investment_focus: str
+
+
+class RegisterResponse(BaseModel):
+    email: str
+    name: str
 
 
 class LoginResponse(BaseModel):
@@ -49,7 +84,11 @@ def _unauthorized(detail: str = "Authentication required.") -> HTTPException:
     )
 
 
-def _investor_from_authorization(authorization: str | None) -> RegisteredInvestor:
+def _investor_from_authorization(
+    authorization: str | None,
+    db: Session,
+) -> RegisteredInvestor:
+    """Retrieve the authenticated investor from a bearer token."""
     if not authorization:
         raise _unauthorized()
 
@@ -58,16 +97,52 @@ def _investor_from_authorization(authorization: str | None) -> RegisteredInvesto
         raise _unauthorized("A bearer token is required.")
 
     try:
-        return verify_access_token(token)
+        return verify_access_token(token, db=db)
     except AuthenticationError as exc:
         raise _unauthorized(str(exc)) from exc
 
 
+@router.post(
+    "/register",
+    response_model=RegisterResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def register(
+    credentials: RegisterRequest,
+    db: Session = Depends(get_db),
+) -> RegisterResponse:
+    """Register a new investor account."""
+    try:
+        user = register_investor(
+            db=db,
+            name=credentials.name,
+            email=credentials.email,
+            password=credentials.password,
+        )
+    except DuplicateAccountError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(exc),
+        ) from exc
+
+    return RegisterResponse(
+        email=user.email,
+        name=user.name,
+    )
+
+
 @router.post("/login", response_model=LoginResponse)
-def login(credentials: LoginRequest) -> LoginResponse:
+def login(
+    credentials: LoginRequest,
+    db: Session = Depends(get_db),
+) -> LoginResponse:
     """Authenticate a registered investor and return a bearer token."""
     try:
-        investor = authenticate_investor(credentials.email, credentials.password)
+        investor = authenticate_investor(
+            credentials.email,
+            credentials.password,
+            db=db,
+        )
     except AuthenticationError as exc:
         raise _unauthorized(str(exc)) from exc
 
@@ -81,7 +156,9 @@ def login(credentials: LoginRequest) -> LoginResponse:
 @router.get("/me", response_model=AccountResponse)
 def current_account(
     authorization: str | None = Header(default=None),
+    db: Session = Depends(get_db),
 ) -> AccountResponse:
     """Return saved account information for the authenticated investor."""
-    investor = _investor_from_authorization(authorization)
+    investor = _investor_from_authorization(authorization, db)
     return _account_response(investor)
+
