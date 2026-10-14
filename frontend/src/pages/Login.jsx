@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
 const TOKEN_STORAGE_KEY = "stock-market-auth-token";
@@ -7,6 +7,8 @@ const USER_STORAGE_KEY = "stock-market-auth-user";
 
 function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const registrationSuccess = location.state?.registrationSuccess === true;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -53,6 +55,11 @@ function Login() {
         <p className="auth-copy">
           Securely access your saved watchlist and account information.
         </p>
+        {registrationSuccess && (
+          <p role="status" className="auth-copy">
+            Account created successfully! Please log in.
+          </p>
+        )}
 
         <form className="login-form" onSubmit={handleSubmit}>
           <label>
@@ -84,6 +91,9 @@ function Login() {
             {isSubmitting ? "Logging in..." : "Log In"}
           </button>
         </form>
+        <p className="auth-copy">
+          Don't have an account? <Link to="/register">Create one</Link>
+        </p>
       </section>
     </main>
   );
