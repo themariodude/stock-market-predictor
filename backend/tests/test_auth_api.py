@@ -15,7 +15,6 @@ from app.main import app
 from app.models.user import User
 from app.services.auth import _auth_secret, create_access_token
 
-
 client = TestClient(app)
 
 
