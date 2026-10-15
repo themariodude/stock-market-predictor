@@ -11,10 +11,17 @@ spec = importlib.util.spec_from_file_location(
 deployment = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(deployment)
 
+BACKEND_IMAGE = "ghcr.io/themariodude/stock-market-predictor-backend@sha256:" + "b" * 64
+FRONTEND_IMAGE = (
+    "ghcr.io/themariodude/stock-market-predictor-frontend@sha256:" + "c" * 64
+)
+
 
 @pytest.mark.parametrize("environment", ["staging", "production"])
 def test_remote_deploy_uses_separate_protected_files(environment):
-    commands = deployment.deployment_commands(environment, "a" * 40)
+    commands = deployment.deployment_commands(
+        environment, "a" * 40, BACKEND_IMAGE, FRONTEND_IMAGE
+    )
     script = "\n".join(commands)
     assert f"/etc/stock-market-predictor/{environment}.env" in script
     assert f"export APP_ENV={environment}" in script
@@ -24,6 +31,9 @@ def test_remote_deploy_uses_separate_protected_files(environment):
     assert "--wait" in script
     assert "sed -i" not in script
     assert "AUTH_SECRET_KEY" not in script
+    assert f"BACKEND_IMAGE={BACKEND_IMAGE}" in script
+    assert f"FRONTEND_IMAGE={FRONTEND_IMAGE}" in script
+    assert "docker inspect" in script
 
 
 @pytest.mark.parametrize(
@@ -32,6 +42,32 @@ def test_remote_deploy_uses_separate_protected_files(environment):
 def test_deploy_rejects_shell_injection(environment, sha):
     with pytest.raises(ValueError):
         deployment.deployment_commands(environment, sha)
+
+
+def test_production_rejects_tag_only_promotion():
+    # Production must require approved immutable image references.
+    with pytest.raises(ValueError):
+        deployment.deployment_commands("production", "a" * 40)
+
+
+@pytest.mark.parametrize(
+    "backend,frontend",
+    [
+        (BACKEND_IMAGE, None),
+        (BACKEND_IMAGE.replace("sha256:", "tag:"), FRONTEND_IMAGE),
+        (BACKEND_IMAGE + ";whoami", FRONTEND_IMAGE),
+        (BACKEND_IMAGE, FRONTEND_IMAGE.replace("themariodude", "other-owner")),
+        (FRONTEND_IMAGE, BACKEND_IMAGE),
+    ],
+)
+def test_production_rejects_missing_or_untrusted_images(backend, frontend):
+    with pytest.raises(ValueError):
+        deployment.deployment_commands("production", "a" * 40, backend, frontend)
+
+
+def test_staging_preserves_tag_fallback():
+    commands = deployment.deployment_commands("staging", "a" * 40)
+    assert "BACKEND_IMAGE" not in "\n".join(commands)
 
 
 def test_deploy_reports_success_without_requesting_remote_output(monkeypatch, capsys):
