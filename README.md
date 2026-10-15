@@ -1,6 +1,8 @@
 # stock-market-predictor
 CPSC 491 Stock Market Predictor for defense-sector analysis and forecasting
 
+Deployment credential setup and verification: [US-60](README-US60.md).
+
 ## View Watchlist
 
 Open **My Watchlist** from the dashboard or account page, or visit `/watchlist`.

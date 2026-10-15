@@ -11,24 +11,33 @@ on:
       - develop
       - main
 
+permissions:
+  contents: read
+
 jobs:
   secrets-scan:
     runs-on: ubuntu-latest
 
     permissions:
       contents: read
-      pull-requests: write
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Scan for leaked secrets
         uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_COMMENTS: "false"
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "false"
+          GITLEAKS_ENABLE_SUMMARY: "false"
+
+      - name: Scan complete Git history with redaction
+        run: gitleaks detect --redact --log-opts=--all --no-banner
 
   backend-checks:
     runs-on: ubuntu-latest
@@ -60,6 +69,12 @@ jobs:
 
       - name: Run tests
         run: python -m pytest
+
+      - name: Check deployment scripts
+        run: |
+          ruff check ../scripts/deploy.py ../scripts/tests
+          ruff format --check ../scripts/deploy.py ../scripts/tests
+          python -m pytest ../scripts/tests
 
   frontend-checks:
     runs-on: ubuntu-latest
