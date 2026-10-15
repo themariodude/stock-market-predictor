@@ -70,4 +70,3 @@ app.include_router(models_router)
 app.include_router(auth_router)
 
 app.include_router(favorites.router)
-

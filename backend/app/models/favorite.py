@@ -1,4 +1,3 @@
-
 from datetime import datetime, timezone
 
 from sqlalchemy import DateTime, Integer, String, UniqueConstraint

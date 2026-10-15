@@ -47,10 +47,7 @@ def list_favorites(
         .order_by(Favorite.ticker)
     ).all()
 
-    return [
-        {"ticker": favorite.ticker}
-        for favorite in favorites
-    ]
+    return [{"ticker": favorite.ticker} for favorite in favorites]
 
 
 @router.post("/{ticker}", status_code=status.HTTP_201_CREATED)
