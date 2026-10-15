@@ -25,19 +25,21 @@ Trading volume and economic indicators are not forecast inputs. Economic indicat
 ## Files
 
 * `backend/app/services/prediction_direction.py`
-* `backend/tests/test_prediction_direction.py`
+* `backend/tests/test_prediction_explanation.py`
+* `frontend/src/components/PredictionFactors.jsx`
 * `frontend/src/pages/StockDetail.jsx`
+* `frontend/src/index.css`
 
 ## Run tests
 
 ```
-docker compose exec backend pytest tests/test_prediction_direction.py tests/test_stocks_api.py
+docker compose exec backend pytest tests/test_prediction_explanation.py
 ```
 
 Expected result:
 
 ```
-
+12 passed
 ```
 
 ## Test real data
