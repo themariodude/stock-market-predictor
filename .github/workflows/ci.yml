@@ -143,6 +143,7 @@ jobs:
       - secrets-scan
       - backend-checks
       - frontend-checks
+      - docker-build
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
