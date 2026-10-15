@@ -50,6 +50,7 @@ function Dashboard() {
         Saved Information
       </Link>
       <h1>Defense Stock Dashboard</h1>
+      <Link to="/watchlist" className="back-button">My Watchlist</Link>
       <p>Select a stock to view its historical performance.</p>
       {/* Grid of clickable stock cardsthat link to detail page
           using the ticker as the URL param (matches ":ticker" in App.jsx) */}

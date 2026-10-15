@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
 const TOKEN_STORAGE_KEY = "stock-market-auth-token";
@@ -7,6 +7,7 @@ const USER_STORAGE_KEY = "stock-market-auth-user";
 
 function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -27,15 +28,24 @@ function Login() {
       });
 
       if (!response.ok) {
-        throw new Error("The email or password you entered is incorrect.");
+        if (response.status === 401) {
+          throw new Error("The email or password you entered is incorrect.");
+        }
+        throw new Error(
+          "Unable to reach the login service. Make sure the backend is running on port 8000, then try again.",
+        );
       }
 
       const data = await response.json();
       localStorage.setItem(TOKEN_STORAGE_KEY, data.access_token);
       localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(data.user));
-      navigate("/account");
+      navigate(location.state?.from === "/watchlist" ? "/watchlist" : "/account", {
+        replace: true,
+      });
     } catch (loginError) {
-      setError(loginError.message);
+      setError(loginError instanceof TypeError
+        ? "Unable to reach the login service. Make sure the backend is running on port 8000, then try again."
+        : loginError.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -78,7 +88,7 @@ function Login() {
             />
           </label>
 
-          {error && <p className="form-error">{error}</p>}
+          {error && <p className="form-error" role="alert">{error}</p>}
 
           <button className="primary-button" disabled={isSubmitting} type="submit">
             {isSubmitting ? "Logging in..." : "Log In"}
