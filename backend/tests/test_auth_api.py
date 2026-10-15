@@ -2,6 +2,14 @@ import base64
 import hashlib
 import hmac
 import json
+import pytest
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
+from sqlalchemy.pool import StaticPool
+
+from app.api.auth import get_db
+from app.database import Base
+from app.models.user import User
 
 from fastapi.testclient import TestClient
 
@@ -9,6 +17,30 @@ from app.main import app
 from app.services.auth import _auth_secret, create_access_token
 
 client = TestClient(app)
+
+
+@pytest.fixture(autouse=True)
+def isolated_auth_database():
+    """Provide an isolated database for authentication API tests."""
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+
+    Base.metadata.create_all(bind=engine, tables=[User.__table__])
+
+    def override_get_db():
+        with Session(engine) as db:
+            yield db
+
+    app.dependency_overrides[get_db] = override_get_db
+
+    try:
+        yield
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+        engine.dispose()
 
 
 def test_login_returns_token_and_saved_account_information():
