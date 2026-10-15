@@ -133,20 +133,20 @@ def register_investor(
     normalized_email = email.strip().lower()
 
     # Prevent duplicate database accounts.
-    existing_user = db.scalar(
-        select(User).where(User.email == normalized_email)
-    )
+    existing_user = db.scalar(select(User).where(User.email == normalized_email))
 
     # Reserve the existing demo investor email.
-    demo_email = os.getenv(
-        "DEMO_INVESTOR_EMAIL",
-        "investor@example.com",
-    ).strip().lower()
+    demo_email = (
+        os.getenv(
+            "DEMO_INVESTOR_EMAIL",
+            "investor@example.com",
+        )
+        .strip()
+        .lower()
+    )
 
     if existing_user is not None or normalized_email == demo_email:
-        raise DuplicateAccountError(
-            "An account with this email already exists."
-        )
+        raise DuplicateAccountError("An account with this email already exists.")
 
     # Store a hashed password rather than plaintext.
     user = User(
@@ -175,9 +175,7 @@ def get_database_investor(
     """Retrieve a registered investor from PostgreSQL."""
     normalized_email = email.strip().lower()
 
-    user = db.scalar(
-        select(User).where(User.email == normalized_email)
-    )
+    user = db.scalar(select(User).where(User.email == normalized_email))
 
     if user is None:
         return None

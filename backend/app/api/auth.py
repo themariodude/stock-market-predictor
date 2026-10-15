@@ -19,7 +19,7 @@ from app.services.auth import (
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
-#Database session dependency
+# Database session dependency
 def get_db() -> Generator[Session, None, None]:
     """Provide a database session and close it after the request."""
     db = get_session()
@@ -161,4 +161,3 @@ def current_account(
     """Return saved account information for the authenticated investor."""
     investor = _investor_from_authorization(authorization, db)
     return _account_response(investor)
-

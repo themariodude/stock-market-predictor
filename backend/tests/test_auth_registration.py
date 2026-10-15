@@ -1,4 +1,3 @@
-
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -64,9 +63,7 @@ def test_registration_creates_account(registration_client):
     }
 
     with Session(engine) as db:
-        user = db.query(User).filter_by(
-            email="newinvestor@example.com"
-        ).one()
+        user = db.query(User).filter_by(email="newinvestor@example.com").one()
 
         assert user.password_hash != "SecurePassword123!"
         assert verify_password(
@@ -89,14 +86,10 @@ def test_registration_rejects_duplicate_email(registration_client):
 
     assert first.status_code == 201
     assert second.status_code == 409
-    assert second.json() == {
-        "detail": "An account with this email already exists."
-    }
+    assert second.json() == {"detail": "An account with this email already exists."}
 
     with Session(engine) as db:
-        assert db.query(User).filter_by(
-            email="duplicate@example.com"
-        ).count() == 1
+        assert db.query(User).filter_by(email="duplicate@example.com").count() == 1
 
 
 @pytest.mark.parametrize(
@@ -163,5 +156,3 @@ def test_registered_investor_can_login_and_access_account(registration_client):
     assert account.status_code == 200
     assert account.json()["email"] == "login@example.com"
     assert account.json()["name"] == "New Investor"
-
-

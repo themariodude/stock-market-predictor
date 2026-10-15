@@ -83,9 +83,9 @@ def test_current_account_rejects_signed_token_with_invalid_payload():
 
     # The payload is valid JSON, but not a token claims object.
     payload = json.dumps(["not", "a", "valid", "payload"])
-    encoded_payload = base64.urlsafe_b64encode(
-        payload.encode("utf-8")
-    ).rstrip(b"=").decode("ascii")
+    encoded_payload = (
+        base64.urlsafe_b64encode(payload.encode("utf-8")).rstrip(b"=").decode("ascii")
+    )
 
     # Sign the malformed payload using the application's signing key.
     signature = hmac.new(
@@ -94,9 +94,7 @@ def test_current_account_rejects_signed_token_with_invalid_payload():
         hashlib.sha256,
     ).digest()
 
-    encoded_signature = base64.urlsafe_b64encode(
-        signature
-    ).rstrip(b"=").decode("ascii")
+    encoded_signature = base64.urlsafe_b64encode(signature).rstrip(b"=").decode("ascii")
 
     token = f"{encoded_payload}.{encoded_signature}"
 
@@ -107,4 +105,3 @@ def test_current_account_rejects_signed_token_with_invalid_payload():
 
     assert response.status_code == 401
     assert response.json() == {"detail": "Invalid access token."}
-
