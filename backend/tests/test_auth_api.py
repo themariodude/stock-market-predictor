@@ -2,19 +2,19 @@ import base64
 import hashlib
 import hmac
 import json
+
 import pytest
+from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
 from app.api.auth import get_db
 from app.database import Base
-from app.models.user import User
-
-from fastapi.testclient import TestClient
-
 from app.main import app
+from app.models.user import User
 from app.services.auth import _auth_secret, create_access_token
+
 
 client = TestClient(app)
 
