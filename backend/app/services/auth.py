@@ -5,6 +5,7 @@ import json
 import os
 import secrets
 import time
+import binascii
 from dataclasses import dataclass
 from typing import Any
 
@@ -248,11 +249,27 @@ def verify_access_token(
             raise AuthenticationError("Invalid access token.")
 
         payload: dict[str, Any] = json.loads(_base64url_decode(encoded_payload))
-    except (ValueError, json.JSONDecodeError):
+        if not isinstance(payload, dict):
+            raise AuthenticationError("Invalid access token.")
+
+        email = payload.get("sub")
+        issued_at = payload.get("iat")
+        expires_at = payload.get("exp")
+
+        if (
+            not isinstance(email, str)
+            or not email.strip()
+            or type(issued_at) is not int
+            or type(expires_at) is not int
+            or expires_at <= issued_at
+        ):
+            raise AuthenticationError("Invalid access token.")
+
+    except (ValueError, TypeError, UnicodeDecodeError, OverflowError, binascii.Error):
         raise AuthenticationError("Invalid access token.") from None
 
     now = current_time if current_time is not None else int(time.time())
-    if int(payload.get("exp", 0)) < now:
+    if expires_at <= now:
         raise AuthenticationError("Access token has expired.")
 
     investor_email = str(payload.get("sub", ""))

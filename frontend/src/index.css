@@ -22,6 +22,14 @@ a {
   text-decoration: none;
 }
 
+/*Make authentication navigation links identifiable */
+.auth-panel .auth-copy a {
+  color: #ffffff;
+  font-weight: 600
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 button {
   font: inherit;
   cursor: pointer;
@@ -350,6 +358,12 @@ button {
 .login-form {
   display: grid;
   gap: 1rem;
+}
+
+/*Space between registration form and login link */
+.auth-panel .login-form + .auth-copy {
+  margin-top: 1.5rem;
+  margin-bottom: 0;
 }
 
 .login-form label,
