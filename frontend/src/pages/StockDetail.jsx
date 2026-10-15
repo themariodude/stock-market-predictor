@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
+import PredictionFactors from "../components/PredictionFactors";
 import StockChart from "../components/StockChart";
 import TimeRangeSelector from "../components/TimeRangeSelector";
 import FavoriteButton from "../components/FavoriteButton";
@@ -166,6 +167,10 @@ function StockDetail() {
           <p className="prediction-error">{predictionError}</p>
         )}
       </section>
+
+      {!isPredictionLoading && prediction?.explanation && (
+        <PredictionFactors explanation={prediction.explanation} />
+      )}
 
       {!isPredictionLoading && prediction && (
         <section className="economic-factors" aria-labelledby="economic-factors-title">
