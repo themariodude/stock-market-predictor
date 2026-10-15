@@ -1,11 +1,11 @@
 import base64
+import binascii
 import hashlib
 import hmac
 import json
 import os
 import secrets
 import time
-import binascii
 from dataclasses import dataclass
 from typing import Any
 
@@ -14,7 +14,6 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.models.user import User
-
 
 TOKEN_TTL_SECONDS = 60 * 60
 PASSWORD_HASH_ALGORITHM = "pbkdf2_sha256"

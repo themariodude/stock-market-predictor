@@ -8,7 +8,6 @@ from fastapi.testclient import TestClient
 from app.main import app
 from app.services.auth import _auth_secret, create_access_token
 
-
 client = TestClient(app)
 
 
