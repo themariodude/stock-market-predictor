@@ -84,6 +84,7 @@ function Account() {
             Back to Dashboard
           </Link>
           <h1>Saved Information</h1>
+          <Link to="/watchlist" className="back-button">My Watchlist</Link>
         </div>
 
         <button className="secondary-button" onClick={handleLogout} type="button">
