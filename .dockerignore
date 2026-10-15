@@ -4,9 +4,15 @@
 docs
 *.md
 
-.env
-.env.*
-!.env.example
+**/.env
+**/.env.*
+**/.aws
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
+**/credentials.json
+**/service-account*.json
 
 **/__pycache__
 **/*.py[cod]

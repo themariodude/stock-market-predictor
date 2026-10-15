@@ -125,6 +125,52 @@ button {
   color: #ff7474;
 }
 
+/* Watchlist */
+
+.watchlist-page {
+  min-height: 100vh;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.watchlist-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 1rem;
+}
+
+.watchlist-grid {
+  padding: 0;
+  list-style: none;
+}
+
+.watchlist-grid .stock-card {
+  display: block;
+  height: 100%;
+}
+
+.watchlist-grid .stock-card:focus-visible {
+  outline: 2px solid #63d391;
+  outline-offset: 4px;
+}
+
+.watchlist-grid span {
+  color: #aeb9c5;
+}
+
+.watchlist-message {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  border: 1px solid #2d3742;
+  border-radius: 8px;
+  background: #131c26;
+}
+
+.watchlist-message button {
+  margin-top: 1rem;
+}
+
 /* Stock Detail */
 
 .stock-detail-page {

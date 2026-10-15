@@ -9,6 +9,7 @@ Register additional routers at the bottom of this file.
 
 import logging
 import os
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -18,6 +19,7 @@ from app.api import favorites
 from app.api.auth import router as auth_router
 from app.api.models import router as models_router
 from app.api.stocks import router as stocks_router
+from app.services.deployment_config import validate_deployment_config
 
 logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO"),
@@ -25,7 +27,14 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
-app = FastAPI(title="Stock Market Predictor API", version="0.1.1")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    validate_deployment_config()
+    yield
+
+
+app = FastAPI(title="Stock Market Predictor API", version="0.1.1", lifespan=lifespan)
 
 cors_origins = [
     origin.strip()
@@ -57,8 +66,8 @@ def health() -> dict:
             with _engine.connect() as conn:
                 conn.execute(text("SELECT 1"))
             db_status = "ok"
-        except Exception as exc:
-            log.warning("database health check failed: %s", exc)
+        except Exception:
+            log.warning("Database health check failed.")
             db_status = "error"
     return {"status": "ok", "database": db_status}
 
