@@ -268,7 +268,8 @@ button {
   color: #ffb3b3;
 }
 
-.economic-factors {
+.economic-factors,
+.prediction-factors {
   margin-top: 2rem;
   padding: 1.5rem;
   border: 1px solid #2d3742;
@@ -276,11 +277,13 @@ button {
   background: #131c26;
 }
 
-.economic-factors h2 {
+.economic-factors h2,
+.prediction-factors h2 {
   margin-top: 0;
 }
 
 .economic-factors > p,
+.prediction-factors > p,
 .factor-card small {
   color: #aeb9c5;
 }

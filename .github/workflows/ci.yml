@@ -72,8 +72,8 @@ jobs:
 
       - name: Check deployment scripts
         run: |
-          ruff check ../scripts/deploy.py ../scripts/tests
-          ruff format --check ../scripts/deploy.py ../scripts/tests
+          ruff check ../scripts/deploy.py ../scripts/check_ci_results.py ../scripts/tests
+          ruff format --check ../scripts/deploy.py ../scripts/check_ci_results.py ../scripts/tests
           python -m pytest ../scripts/tests
 
   frontend-checks:
@@ -90,7 +90,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
           cache: "npm"
           cache-dependency-path: frontend/package-lock.json
 
@@ -100,5 +100,29 @@ jobs:
       - name: Lint frontend
         run: npm run lint
 
+      - name: Test frontend
+        run: npm test
+
       - name: Build frontend
         run: npm run build
+
+  required-checks:
+    name: CI Required Checks
+    if: ${{ always() }}
+    needs:
+      - secrets-scan
+      - backend-checks
+      - frontend-checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout CI gate
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Require every CI job to succeed
+        env:
+          CI_JOB_RESULTS: ${{ toJSON(needs) }}
+        run: python3 scripts/check_ci_results.py

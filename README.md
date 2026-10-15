@@ -3,6 +3,8 @@ CPSC 491 Stock Market Predictor for defense-sector analysis and forecasting
 
 Deployment credential setup and verification: [US-60](README-US60.md).
 
+Required CI and protected-branch setup: [US-56](README-US56.md).
+
 ## View Watchlist
 
 Open **My Watchlist** from the dashboard or account page, or visit `/watchlist`.

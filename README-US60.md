@@ -5,6 +5,91 @@ GitHub environment secrets. Commit only the example templates. Local development
 still supports the public demo login; staging and production require an explicit
 signing key and configured investor password hash.
 
+## PR and deployment checklist
+
+You can open a pull request into `develop` before AWS is ready. A draft PR is
+useful while your teammate finishes infrastructure; a regular PR can also be
+reviewed before setup is complete. Opening the PR runs CI. Merging it into
+`develop` triggers staging deployment, so complete the staging setup before
+merging. Production setup is needed before a production deployment, not before
+opening this PR.
+
+### Before opening the PR — feature author
+
+- [ ] Commit and push `feature/Securing-Deployment-Credentials-and-Secrets`.
+- [ ] Review the changed files: only code, tests, documentation, and placeholder
+  templates are included. No real `.env` files, keys, or credential values.
+- [ ] Run the checks in the Verification section and include their results in
+  the PR description. The previous local run passed 224 tests, lint, formatting,
+  and the Git-history secret scan; this is not a GitHub CI or AWS deployment result.
+- [ ] Open the PR with base `develop` and your feature branch as the compare branch.
+- [ ] State that deployment verification is pending and identify the teammate
+  responsible for GitHub/AWS configuration. Share this guide with that teammate.
+
+### Before merging into develop — repository administrator and AWS teammate
+
+- [ ] In GitHub Settings, create the `staging` environment and restrict its
+  deployment branch to `develop`.
+- [ ] Add all five staging environment secrets listed below: `AWS_ROLE_ARN`,
+  `AWS_REGION`, `DEPLOY_INSTANCE_ID`, `SMOKE_BACKEND_URL`, and `SMOKE_FRONTEND_URL`.
+  Populate them with the actual staging infrastructure values, not placeholders.
+- [ ] Migrate old staging secret names and remove shared repository-level
+  deployment entries after their environment-scoped replacements are ready.
+- [ ] Configure GitHub OIDC in AWS and the staging deployment role's trust policy
+  for this exact repository and the `staging` environment. Confirm the repository's
+  OIDC subject format matches the policy; use GitHub's linked guidance below.
+- [ ] Limit the role's SSM permissions to deployment on the staging instance,
+  with permission to read command status. Do not give it production access.
+- [ ] Confirm the staging EC2 instance is online in Systems Manager, its instance
+  role supports SSM, and the agent can reach the required AWS endpoints.
+- [ ] Install Docker and Compose v2 with `up --wait` support on that instance.
+  Confirm it can pull this repository's backend and frontend images from GHCR.
+  If the images are private, configure read access on the host securely.
+- [ ] Put the updated `docker-compose.staging.yml` from this PR in
+  `/opt/stock-market-predictor`. Image deployment does not update this host file.
+- [ ] Create `/etc/stock-market-predictor/staging.env` using
+  `.env.staging.example`. Set the directory owner to root and mode to `0700`;
+  set the file owner to root and mode to `0600`. Do not use a symlink.
+- [ ] Replace all template values: GitHub image owner, database user/name/password
+  and connection URL, signing key, investor email and password hash, frontend and
+  backend addresses, and CORS origin. Use `APP_ENV=staging`. Configure the FRED
+  API key if required by your deployment; it is optional in Compose.
+- [ ] Match the database URL password to the actual database user's password.
+  Preserve the existing staging Compose project name and database volume.
+- [ ] Confirm GitHub Actions can reach the smoke-test URLs and the browser can
+  reach the configured backend address. Configure host networking accordingly.
+- [ ] Verify this PR's GitHub CI checks pass, including the redacted secret scan.
+- [ ] Have the infrastructure teammate confirm staging is ready, then merge.
+
+### After merging — author and AWS teammate
+
+- [ ] Confirm the Deployment workflow builds and publishes both images, assumes
+  the staging role, completes the SSM deployment, and passes all smoke tests.
+- [ ] Review CI/CD logs for exposed credentials without copying secret values
+  into the PR. Confirm only deployment status is returned from SSM.
+- [ ] Confirm deployed login works with the configured investor credentials.
+- [ ] Record the workflow run link and a nonsecret validation summary in the PR
+  or story. If deployment fails, diagnose it with the teammate before marking
+  the deployment acceptance criteria complete.
+
+### Before production deployment and full US-60 sign-off — AWS teammate
+
+- [ ] Create GitHub's `production` environment, restrict it to `main`, and add
+  review protections where supported.
+- [ ] Configure its five environment secrets with production-specific values,
+  a separate AWS role, and a separate production instance. Restrict OIDC trust
+  and deployment permissions to that environment and instance.
+- [ ] Prepare the production host and current Compose file as described below.
+  Create `/etc/stock-market-predictor/production.env` from the production template
+  with root ownership, mode `0600`, and `APP_ENV=production`.
+- [ ] Generate independent production credentials; verify database passwords,
+  signing keys, investor passwords/hashes, and any API credentials are not reused
+  from staging. Keep values in their designated secret stores, not in this checklist.
+- [ ] When production deployment is authorized, manually run Deployment from
+  `main` with target `production` and verify deployment, smoke tests, and logs.
+- [ ] Record evidence for all five acceptance criteria. Leave unverified remote
+  requirements open until their configuration and behavior have been checked.
+
 ## Repository protections
 
 - Git ignores `.env`, `.env.*`, AWS credential folders, and private key files at
