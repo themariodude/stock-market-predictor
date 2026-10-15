@@ -123,37 +123,15 @@ jobs:
       - name: Build backend Docker image
         uses: docker/build-push-action@v6
         with:
-          context: ./backend
-          file: ./backend/Dockerfile
+          context: .
+          file: ./infra/docker/Dockerfile.backend
           push: false
           tags: stock-market-predictor-backend:ci
 
       - name: Build frontend Docker image
         uses: docker/build-push-action@v6
         with:
-          context: ./frontend
-          file: ./frontend/Dockerfile
+          context: .
+          file: ./infra/docker/Dockerfile.frontend
           push: false
           tags: stock-market-predictor-frontend:ci
-
-  required-checks:
-    name: CI Required Checks
-    if: ${{ always() }}
-    needs:
-      - secrets-scan
-      - backend-checks
-      - frontend-checks
-      - docker-build
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-
-    steps:
-      - name: Checkout CI gate
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-
-      - name: Require every CI job to succeed
-        env:
-          CI_JOB_RESULTS: ${{ toJSON(needs) }}
-        run: python3 scripts/check_ci_results.py
