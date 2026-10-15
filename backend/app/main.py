@@ -17,6 +17,8 @@ from sqlalchemy import create_engine, text
 from app.api.auth import router as auth_router
 from app.api.models import router as models_router
 from app.api.stocks import router as stocks_router
+from app.api import favorites
+
 
 logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO"),
@@ -67,3 +69,6 @@ app.include_router(stocks_router)
 app.include_router(models_router)
 
 app.include_router(auth_router)
+
+app.include_router(favorites.router)
+
