@@ -3,6 +3,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
 import StockDetail from "./pages/StockDetail";
+import Login from "./pages/Login";
+import Account from "./pages/Account";
 
 // BrowserRouter enables client-side navigation without full page reloads.
 function App() {
@@ -11,6 +13,10 @@ function App() {
       <Routes>
         {/* Main page */}
         <Route path="/" element={<Home />} />
+        {/* Registered investor login */}
+        <Route path="/login" element={<Login />} />
+        {/* Saved account information */}
+        <Route path="/account" element={<Account />} />
         {/* Grid of all tracked defense stocks */}
         <Route path="/dashboard" element={<Dashboard />} />
         {/* Shows the data for an individual stock */}
