@@ -40,8 +40,8 @@ async function favoritesRequest(path, token, options = {}) {
 }
 
 // Get all favorite stocks for the logged-in user.
-export function getFavorites(token) {
-  return favoritesRequest("/favorites", token);
+export function getFavorites(token, options = {}) {
+  return favoritesRequest("/favorites", token, options);
 }
 
 // Add a stock to favorites.
