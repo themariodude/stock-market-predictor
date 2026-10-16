@@ -9,6 +9,7 @@ function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const registrationSuccess = location.state?.registrationSuccess === true;
+  const passwordResetSuccess = location.state?.passwordResetSuccess === true;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -70,6 +71,12 @@ function Login() {
           </p>
         )}
 
+        {passwordResetSuccess && (
+          <p role="status" className="auth-copy">
+            Your password has been reset successfully. Please log in.
+          </p>
+        )}
+
         <form className="login-form" onSubmit={handleSubmit}>
           <label>
             Email
@@ -100,6 +107,10 @@ function Login() {
             {isSubmitting ? "Logging in..." : "Log In"}
           </button>
         </form>
+        <p className="auth-copy">
+          <Link to="/forgot-password">Forgot Password?</Link>
+        </p>
+
         <p className="auth-copy">
           Don't have an account? <Link to="/register">Create one</Link>
         </p>
