@@ -70,6 +70,12 @@ def deployment_commands(
     commands.extend(
         [
             f"{compose} pull --quiet",
+            # Start the existing database and wait until it is healthy.
+            f"{compose} up -d --wait --wait-timeout 180 db",
+            # Apply migrations once, using the selected backend image.
+            # A failure stops deployment because the remote script uses set -eu.
+            f"{compose} run --rm --no-deps backend python -m alembic upgrade head",
+            # Start the updated application only after migrations succeed.
             f"{compose} up -d --remove-orphans --wait --wait-timeout 180",
         ]
     )

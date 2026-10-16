@@ -76,6 +76,53 @@ jobs:
           ruff format --check ../scripts/deploy.py ../scripts/check_ci_results.py ../scripts/tests
           python -m pytest ../scripts/tests
 
+  migration-checks:
+    name: Validate Database Migrations
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: migration_test
+          POSTGRES_PASSWORD: migration_test_password
+          POSTGRES_DB: migration_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U migration_test -d migration_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    defaults:
+      run:
+        working-directory: backend
+
+    env:
+      DATABASE_URL: postgresql+psycopg://migration_test:migration_test_password@localhost:5432/migration_test
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Apply database migrations
+        run: python -m alembic upgrade head
+
+      - name: Verify database is at migration head
+        run: python -m alembic current --check-heads
+
+      - name: Verify migrations can run again safely
+        run: python -m alembic upgrade head
+
   frontend-checks:
     runs-on: ubuntu-latest
 
@@ -112,6 +159,7 @@ jobs:
     needs:
       - secrets-scan
       - backend-checks
+      - migration-checks
       - frontend-checks
       - docker-build
     runs-on: ubuntu-latest

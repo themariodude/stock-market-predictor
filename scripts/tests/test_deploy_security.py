@@ -36,6 +36,43 @@ def test_remote_deploy_uses_separate_protected_files(environment):
     assert "docker inspect" in script
 
 
+@pytest.mark.parametrize("environment", ["staging", "production"])
+def test_database_migrations_run_before_application_deployment(environment):
+    commands = deployment.deployment_commands(
+        environment, "a" * 40, BACKEND_IMAGE, FRONTEND_IMAGE
+    )
+
+    pull_index = next(
+        i for i, command in enumerate(commands) if "pull --quiet" in command
+    )
+    db_index = next(
+        i
+        for i, command in enumerate(commands)
+        if "up -d --wait --wait-timeout 180 db" in command
+    )
+    migration_index = next(
+        i
+        for i, command in enumerate(commands)
+        if "python -m alembic upgrade head" in command
+    )
+    deploy_index = next(
+        i
+        for i, command in enumerate(commands)
+        if "up -d --remove-orphans --wait" in command
+    )
+
+    assert pull_index < db_index < migration_index < deploy_index
+    assert (
+        commands.count(
+            next(command for command in commands if "alembic upgrade head" in command)
+        )
+        == 1
+    )
+
+    # A failed migration must stop the remote shell before application startup.
+    assert "set -eu" in commands
+
+
 @pytest.mark.parametrize(
     "environment,sha", [("bad", "a" * 40), ("staging", "a;whoami")]
 )
