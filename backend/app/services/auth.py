@@ -1,4 +1,5 @@
 import base64
+import binascii
 import hashlib
 import hmac
 import json
@@ -8,6 +9,11 @@ import time
 from dataclasses import dataclass
 from typing import Any
 
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
+
+from app.models.user import User
 from app.services.deployment_config import validate_deployment_config
 
 TOKEN_TTL_SECONDS = 60 * 60
@@ -20,6 +26,10 @@ _DEVELOPMENT_AUTH_SECRET = secrets.token_bytes(32)
 
 class AuthenticationError(Exception):
     """Raised when credentials or bearer tokens cannot be authenticated."""
+
+
+class DuplicateAccountError(Exception):
+    """Raised when an investor email is already registered."""
 
 
 @dataclass(frozen=True)
@@ -121,9 +131,83 @@ def get_registered_investor(email: str) -> RegisteredInvestor | None:
     )
 
 
-def authenticate_investor(email: str, password: str) -> RegisteredInvestor:
-    """Authenticate a registered investor with email and password."""
+def register_investor(
+    db: Session,
+    name: str,
+    email: str,
+    password: str,
+) -> User:
+    """Create a new investor account in PostgreSQL."""
+    normalized_email = email.strip().lower()
+
+    # Prevent duplicate database accounts.
+    existing_user = db.scalar(select(User).where(User.email == normalized_email))
+
+    # Reserve the existing demo investor email.
+    demo_email = (
+        os.getenv(
+            "DEMO_INVESTOR_EMAIL",
+            "investor@example.com",
+        )
+        .strip()
+        .lower()
+    )
+
+    if existing_user is not None or normalized_email == demo_email:
+        raise DuplicateAccountError("An account with this email already exists.")
+
+    # Store a hashed password rather than plaintext.
+    user = User(
+        name=name.strip(),
+        email=normalized_email,
+        password_hash=hash_password(password),
+    )
+
+    try:
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+    except IntegrityError as exc:
+        db.rollback()
+        raise DuplicateAccountError(
+            "An account with this email already exists."
+        ) from exc
+
+    return user
+
+
+def get_database_investor(
+    db: Session,
+    email: str,
+) -> RegisteredInvestor | None:
+    """Retrieve a registered investor from PostgreSQL."""
+    normalized_email = email.strip().lower()
+
+    user = db.scalar(select(User).where(User.email == normalized_email))
+
+    if user is None:
+        return None
+
+    return RegisteredInvestor(
+        email=user.email,
+        name=user.name,
+        password_hash=user.password_hash,
+        saved_stocks=(),
+        investment_focus="",
+    )
+
+
+def authenticate_investor(
+    email: str,
+    password: str,
+    db: Session | None = None,
+) -> RegisteredInvestor:
+    """Authenticate a demo or database-backed investor."""
     investor = get_registered_investor(email)
+
+    if investor is None and db is not None:
+        investor = get_database_investor(db, email)
+
     if investor is None or not verify_password(password, investor.password_hash):
         raise AuthenticationError("Invalid email or password.")
 
@@ -132,7 +216,7 @@ def authenticate_investor(email: str, password: str) -> RegisteredInvestor:
 
 def create_access_token(email: str, issued_at: int | None = None) -> str:
     """Create a signed bearer token for a registered investor."""
-    now = issued_at or int(time.time())
+    now = issued_at if issued_at is not None else int(time.time())
     payload = {
         "sub": email.strip().lower(),
         "iat": now,
@@ -152,6 +236,7 @@ def create_access_token(email: str, issued_at: int | None = None) -> str:
 def verify_access_token(
     token: str,
     current_time: int | None = None,
+    db: Session | None = None,
 ) -> RegisteredInvestor:
     """Validate a bearer token and return the associated registered investor."""
     try:
@@ -169,14 +254,35 @@ def verify_access_token(
             raise AuthenticationError("Invalid access token.")
 
         payload: dict[str, Any] = json.loads(_base64url_decode(encoded_payload))
-    except (ValueError, json.JSONDecodeError):
+        if not isinstance(payload, dict):
+            raise AuthenticationError("Invalid access token.")
+
+        email = payload.get("sub")
+        issued_at = payload.get("iat")
+        expires_at = payload.get("exp")
+
+        if (
+            not isinstance(email, str)
+            or not email.strip()
+            or type(issued_at) is not int
+            or type(expires_at) is not int
+            or expires_at <= issued_at
+        ):
+            raise AuthenticationError("Invalid access token.")
+
+    except (ValueError, TypeError, UnicodeDecodeError, OverflowError, binascii.Error):
         raise AuthenticationError("Invalid access token.") from None
 
-    now = current_time or int(time.time())
-    if int(payload.get("exp", 0)) < now:
+    now = current_time if current_time is not None else int(time.time())
+    if expires_at <= now:
         raise AuthenticationError("Access token has expired.")
 
-    investor = get_registered_investor(str(payload.get("sub", "")))
+    investor_email = str(payload.get("sub", ""))
+    investor = get_registered_investor(investor_email)
+
+    if investor is None and db is not None:
+        investor = get_database_investor(db, investor_email)
+
     if investor is None:
         raise AuthenticationError("Invalid access token.")
 
