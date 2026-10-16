@@ -2,6 +2,7 @@
 CPSC 491 Stock Market Predictor for defense-sector analysis and forecasting
 
 Deployment credential setup and verification: [US-60](README-US60.md).
+Tested-image promotion to production: [SCRUM-89](README-SCRUM89.md).
 
 Required CI and protected-branch setup: [US-56](README-US56.md).
 
