@@ -1,4 +1,5 @@
+from app.models.password_reset import PasswordResetToken
 from app.models.stock import Stock, StockPrice
 from app.models.user import User
 
-__all__ = ["Stock", "StockPrice", "User"]
+__all__ = ["PasswordResetToken", "Stock", "StockPrice", "User"]

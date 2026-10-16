@@ -1,3 +1,4 @@
+import logging
 from collections.abc import Generator
 
 from fastapi import APIRouter, Depends, Header, HTTPException, status
@@ -9,14 +10,24 @@ from app.services.auth import (
     TOKEN_TTL_SECONDS,
     AuthenticationError,
     DuplicateAccountError,
+    PasswordResetError,
     RegisteredInvestor,
     authenticate_investor,
+    confirm_password_reset,
     create_access_token,
+    create_password_reset_token,
     register_investor,
     verify_access_token,
 )
+from app.services.password_reset_delivery import send_password_reset_email
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+logger = logging.getLogger(__name__)
+
+RESET_REQUEST_MESSAGE = (
+    "If an account exists for this email, " "password reset instructions will be sent."
+)
 
 
 # Database session dependency
@@ -46,6 +57,23 @@ class RegisterRequest(BaseModel):
 class LoginRequest(BaseModel):
     email: str = Field(min_length=3)
     password: str = Field(min_length=1)
+
+
+class PasswordResetRequest(BaseModel):
+    email: str = Field(
+        min_length=3,
+        max_length=255,
+        pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$",
+    )
+
+
+class PasswordResetConfirmRequest(BaseModel):
+    token: str = Field(min_length=1, max_length=512)
+    new_password: str = Field(min_length=8, max_length=128)
+
+
+class PasswordResetResponse(BaseModel):
+    message: str
 
 
 class AccountResponse(BaseModel):
@@ -161,3 +189,54 @@ def current_account(
     """Return saved account information for the authenticated investor."""
     investor = _investor_from_authorization(authorization, db)
     return _account_response(investor)
+
+
+@router.post(
+    "/password-reset/request",
+    response_model=PasswordResetResponse,
+)
+def request_password_reset(
+    payload: PasswordResetRequest,
+    db: Session = Depends(get_db),
+) -> PasswordResetResponse:
+    """Request password reset instructions for a registered account."""
+    token = create_password_reset_token(db, payload.email)
+
+    if token is not None:
+        try:
+            send_password_reset_email(
+                email=payload.email.strip().lower(),
+                token=token,
+            )
+        except Exception:
+            logger.exception("Password reset email delivery failed")
+
+    return PasswordResetResponse(
+        message=RESET_REQUEST_MESSAGE,
+    )
+
+
+@router.post(
+    "/password-reset/confirm",
+    response_model=PasswordResetResponse,
+)
+def reset_password(
+    payload: PasswordResetConfirmRequest,
+    db: Session = Depends(get_db),
+) -> PasswordResetResponse:
+    """Confirm a password reset using a single-use token."""
+    try:
+        confirm_password_reset(
+            db=db,
+            token=payload.token,
+            new_password=payload.new_password,
+        )
+    except PasswordResetError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+
+    return PasswordResetResponse(
+        message="Password reset successful.",
+    )
