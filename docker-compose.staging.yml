@@ -20,7 +20,7 @@ services:
     restart: unless-stopped
 
   backend:
-    image: ghcr.io/${GHCR_OWNER}/stock-market-predictor-backend:${IMAGE_TAG}
+    image: ${BACKEND_IMAGE:-ghcr.io/${GHCR_OWNER}/stock-market-predictor-backend:${IMAGE_TAG}}
     environment:
       APP_ENV: ${APP_ENV:?APP_ENV is required}
       DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
@@ -48,7 +48,7 @@ services:
     restart: unless-stopped
 
   frontend:
-    image: ghcr.io/${GHCR_OWNER}/stock-market-predictor-frontend:${IMAGE_TAG}
+    image: ${FRONTEND_IMAGE:-ghcr.io/${GHCR_OWNER}/stock-market-predictor-frontend:${IMAGE_TAG}}
     environment:
       VITE_API_BASE_URL: ${VITE_API_BASE_URL}
     ports:
