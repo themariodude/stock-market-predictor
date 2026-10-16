@@ -8,6 +8,9 @@ import Register from "./pages/Register";
 import Account from "./pages/Account";
 import Watchlist from "./pages/Watchlist";
 
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
+
 // BrowserRouter enables client-side navigation without full page reloads.
 function App() {
   return (
@@ -19,6 +22,9 @@ function App() {
         <Route path="/login" element={<Login />} />
         {/* New investor registration */}
         <Route path="/register" element={<Register />} />
+        {/*Password Recovery (SCRUM-30) */}
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         {/* Saved account information */}
         <Route path="/account" element={<Account />} />
         <Route path="/watchlist" element={<Watchlist />} />
