@@ -13,7 +13,13 @@ from app.api.auth import get_db
 from app.database import Base
 from app.main import app
 from app.models.user import User
-from app.services.auth import _auth_secret, create_access_token
+from app.services.auth import (
+    TOKEN_TTL_SECONDS,
+    AuthenticationError,
+    _auth_secret,
+    create_access_token,
+    verify_access_token,
+)
 
 client = TestClient(app)
 
@@ -136,3 +142,71 @@ def test_current_account_rejects_signed_token_with_invalid_payload():
 
     assert response.status_code == 401
     assert response.json() == {"detail": "Invalid access token."}
+
+
+@pytest.mark.parametrize(
+    "authorization",
+    ["Basic credentials", "Bearer", "Bearer invalid.token", "Bearer a.b.c"],
+)
+def test_current_account_rejects_invalid_authorization(authorization):
+    response = client.get("/auth/me", headers={"Authorization": authorization})
+
+    assert response.status_code == 401
+    assert "saved_stocks" not in response.json()
+
+
+def test_current_account_rejects_expired_token():
+    token = create_access_token("investor@example.com", issued_at=1)
+
+    response = client.get("/auth/me", headers={"Authorization": f"Bearer {token}"})
+
+    assert response.status_code == 401
+    assert "saved_stocks" not in response.json()
+
+
+def test_current_account_rejects_unknown_subject():
+    token = create_access_token("unknown@example.invalid")
+
+    response = client.get("/auth/me", headers={"Authorization": f"Bearer {token}"})
+
+    assert response.status_code == 401
+    assert "saved_stocks" not in response.json()
+
+
+def test_access_token_expires_at_expiration_boundary():
+    issued_at = 1_700_000_000
+    token = create_access_token("investor@example.com", issued_at=issued_at)
+
+    with pytest.raises(AuthenticationError, match="expired"):
+        verify_access_token(token, current_time=issued_at + TOKEN_TTL_SECONDS)
+
+
+def test_registered_accounts_cannot_read_each_others_information():
+    for name, email in (
+        ("Investor One", "one@example.invalid"),
+        ("Investor Two", "two@example.invalid"),
+    ):
+        response = client.post(
+            "/auth/register",
+            json={"name": name, "email": email, "password": "SecurePassword123!"},
+        )
+        assert response.status_code == 201
+
+    for name, email in (
+        ("Investor One", "one@example.invalid"),
+        ("Investor Two", "two@example.invalid"),
+    ):
+        login = client.post(
+            "/auth/login",
+            json={"email": email, "password": "SecurePassword123!"},
+        )
+        assert login.status_code == 200
+        token = login.json()["access_token"]
+        account = client.get("/auth/me", headers={"Authorization": f"Bearer {token}"})
+        assert account.status_code == 200
+        assert account.json() == {
+            "email": email,
+            "name": name,
+            "saved_stocks": [],
+            "investment_focus": "",
+        }
