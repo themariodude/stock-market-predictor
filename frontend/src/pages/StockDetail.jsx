@@ -4,6 +4,7 @@ import { Link, useParams } from "react-router-dom";
 import PredictionFactors from "../components/PredictionFactors";
 import StockChart from "../components/StockChart";
 import TimeRangeSelector from "../components/TimeRangeSelector";
+import FavoriteButton from "../components/FavoriteButton";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
 
@@ -103,11 +104,14 @@ function StockDetail() {
 
   return (
     <main className="stock-detail-page">
-      <Link to="/dashboard">Back to Dashboard</Link>
+    <Link to="/dashboard">Back to Dashboard</Link>
 
+    <div className="stock-header">
       <h1>{ticker}</h1>
+      <FavoriteButton key={ticker} ticker={ticker} />
+    </div>
 
-      <section className="prediction-direction">
+    <section className="prediction-direction">
         <div>
           <p className="section-label">Forecast Direction</p>
           {isPredictionLoading && <h2>Loading...</h2>}
