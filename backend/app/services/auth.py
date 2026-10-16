@@ -7,16 +7,19 @@ import os
 import secrets
 import time
 from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.models.password_reset import PasswordResetToken
 from app.models.user import User
 from app.services.deployment_config import validate_deployment_config
 
 TOKEN_TTL_SECONDS = 60 * 60
+PASSWORD_RESET_TTL_MINUTES = 30
 PASSWORD_HASH_ALGORITHM = "pbkdf2_sha256"
 PASSWORD_HASH_ITERATIONS = 390_000
 DEMO_PASSWORD = "SecurePass123!"
@@ -30,6 +33,10 @@ class AuthenticationError(Exception):
 
 class DuplicateAccountError(Exception):
     """Raised when an investor email is already registered."""
+
+
+class PasswordResetError(Exception):
+    """Raised when a password reset token is invalid or expired."""
 
 
 @dataclass(frozen=True)
@@ -287,3 +294,85 @@ def verify_access_token(
         raise AuthenticationError("Invalid access token.")
 
     return investor
+
+
+def create_password_reset_token(
+    db: Session,
+    email: str,
+) -> str | None:
+    """Generate a single-use reset token for a database user."""
+    normalized_email = email.strip().lower()
+
+    user = db.scalar(select(User).where(User.email == normalized_email))
+
+    if user is None:
+        return None
+
+    now = datetime.now(timezone.utc)
+
+    raw_token = secrets.token_urlsafe(32)
+    token_hash = hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
+
+    # Invalidate previously issued reset tokens.
+    db.execute(
+        update(PasswordResetToken)
+        .where(
+            PasswordResetToken.user_id == user.id,
+            PasswordResetToken.used_at.is_(None),
+        )
+        .values(used_at=now)
+    )
+
+    reset_record = PasswordResetToken(
+        user_id=user.id,
+        token_hash=token_hash,
+        expires_at=now + timedelta(minutes=PASSWORD_RESET_TTL_MINUTES),
+    )
+
+    db.add(reset_record)
+    db.commit()
+
+    return raw_token
+
+
+def confirm_password_reset(
+    db: Session,
+    token: str,
+    new_password: str,
+) -> None:
+    """Validate a reset token and persist the new password."""
+    now = datetime.now(timezone.utc)
+
+    token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+    # Consume the token atomically.
+    claim = db.execute(
+        update(PasswordResetToken)
+        .where(
+            PasswordResetToken.token_hash == token_hash,
+            PasswordResetToken.used_at.is_(None),
+            PasswordResetToken.expires_at > now,
+        )
+        .values(used_at=now)
+    )
+
+    if claim.rowcount != 1:
+        db.rollback()
+        raise PasswordResetError("Invalid or expired password reset token.")
+
+    reset_record = db.scalar(
+        select(PasswordResetToken).where(PasswordResetToken.token_hash == token_hash)
+    )
+
+    if reset_record is None:
+        db.rollback()
+        raise PasswordResetError("Invalid or expired password reset token.")
+
+    user = db.get(User, reset_record.user_id)
+
+    if user is None:
+        db.rollback()
+        raise PasswordResetError("Invalid or expired password reset token.")
+
+    user.password_hash = hash_password(new_password)
+    db.commit()
