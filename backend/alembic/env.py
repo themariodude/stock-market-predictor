@@ -4,8 +4,9 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import create_engine, pool
 
-import app.models.macro  # noqa: F401  (registers MacroObservation on Base)
-import app.models.user   #noqa: F401
+import app.models.macro  # noqa: F401
+import app.models.password_reset  # noqa: F401
+import app.models.user  # noqa: F401
 from app.database import Base
 
 config = context.config
@@ -21,7 +22,11 @@ target_metadata = Base.metadata
 
 # Alembic manages only these tables. Other models on Base (stocks,
 # stock_prices) are left untouched until the team adopts migrations for them.
-MANAGED_TABLES = {"macro_observations", "users"}
+MANAGED_TABLES = {
+    "macro_observations",
+    "users",
+    "password_reset_tokens",
+}
 
 
 def include_object(obj, name, type_, reflected, compare_to):
