@@ -11,24 +11,33 @@ on:
       - develop
       - main
 
+permissions:
+  contents: read
+
 jobs:
   secrets-scan:
     runs-on: ubuntu-latest
 
     permissions:
       contents: read
-      pull-requests: write
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Scan for leaked secrets
         uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_COMMENTS: "false"
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "false"
+          GITLEAKS_ENABLE_SUMMARY: "false"
+
+      - name: Scan complete Git history with redaction
+        run: gitleaks detect --redact --log-opts=--all --no-banner
 
   backend-checks:
     runs-on: ubuntu-latest
@@ -59,4 +68,61 @@ jobs:
         run: ruff format --check app tests
 
       - name: Run tests
-        run: pytest
+        run: python -m pytest
+
+      - name: Check deployment scripts
+        run: |
+          ruff check ../scripts/deploy.py ../scripts/check_ci_results.py ../scripts/tests
+          ruff format --check ../scripts/deploy.py ../scripts/check_ci_results.py ../scripts/tests
+          python -m pytest ../scripts/tests
+
+  frontend-checks:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Lint frontend
+        run: npm run lint
+
+      - name: Test frontend
+        run: npm test
+
+      - name: Build frontend
+        run: npm run build
+
+  required-checks:
+    name: CI Required Checks
+    if: ${{ always() }}
+    needs:
+      - secrets-scan
+      - backend-checks
+      - frontend-checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout CI gate
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Require every CI job to succeed
+        env:
+          CI_JOB_RESULTS: ${{ toJSON(needs) }}
+        run: python3 scripts/check_ci_results.py
