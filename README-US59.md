@@ -39,6 +39,15 @@ python3 scripts/smoke_test.py --backend-url http://<host>:8000 --frontend-url ht
 
 `--wait 30` changes how long it waits for the backend.
 
-## Not included yet
+## In the deployment pipeline
 
-Running it automatically after each staging deploy. That step is added to the deploy job once staging exists (US-58).
+The `smoke-test` job in `.github/workflows/staging.yml` runs after `deploy` on every push to `develop`, and on manual runs for `staging` or `production`.
+
+It reads the URLs from the target environment's secrets (Settings → Environments):
+
+* `SMOKE_BACKEND_URL` — for example `http://<host>:8000`
+* `SMOKE_FRONTEND_URL` — for example `http://<host>:5173`
+
+If either secret is missing, the job fails before sending any request. Both URLs appear as `***` in the log.
+
+A failed smoke test fails the workflow run but does not roll back the deploy. Check the `smoke-test` job log to see which check failed.
