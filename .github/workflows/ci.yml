@@ -114,10 +114,25 @@ jobs:
       - backend-checks
       - frontend-checks
       - docker-build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout CI gate
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Require every CI job to succeed
+        env:
+          CI_JOB_RESULTS: ${{ toJSON(needs) }}
+        run: python3 scripts/check_ci_results.py
       
+  
   docker-build:
     name: Validate Docker Images
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     permissions:
       contents: read
@@ -136,6 +151,8 @@ jobs:
           file: ./infra/docker/Dockerfile.backend
           push: false
           tags: stock-market-predictor-backend:ci
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend
 
       - name: Build frontend Docker image
         uses: docker/build-push-action@v6
@@ -144,3 +161,5 @@ jobs:
           file: ./infra/docker/Dockerfile.frontend
           push: false
           tags: stock-market-predictor-frontend:ci
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,mode=max,scope=frontend
