@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
-import { loadWatchlist } from "../services/watchlist";
+import { getFavorites } from "../features/favorites_api";
 
 function Watchlist() {
   const navigate = useNavigate();
+
   const [stocks, setStocks] = useState([]);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -12,8 +13,12 @@ function Watchlist() {
 
   useEffect(() => {
     const token = localStorage.getItem("stock-market-auth-token");
+
     function requireLogin() {
-      navigate("/login", { replace: true, state: { from: "/watchlist" } });
+      navigate("/login", {
+        replace: true,
+        state: { from: "/watchlist" },
+      });
     }
 
     if (!token) {
@@ -22,25 +27,51 @@ function Watchlist() {
     }
 
     const controller = new AbortController();
+
     async function load() {
+      setIsLoading(true);
+      setError("");
+
       try {
-        const result = await loadWatchlist(token, { signal: controller.signal });
-        if (!controller.signal.aborted) setStocks(result);
+        // Retrieve favorites from PostgreSQL-backed API.
+        const favorites = await getFavorites(token, {
+          signal: controller.signal,
+        });
+
+        if (!Array.isArray(favorites)) {
+          throw new Error("Invalid favorites response.");
+        }
+
+        // Format favorites for existing Watchlist cards.
+        const result = favorites.map((favorite) => ({
+          ticker: favorite.ticker,
+          company: favorite.company || favorite.ticker,
+        }));
+
+        if (!controller.signal.aborted) {
+          setStocks(result);
+        }
       } catch (loadError) {
         if (controller.signal.aborted) return;
+
         if (loadError.status === 401) {
           localStorage.removeItem("stock-market-auth-token");
           localStorage.removeItem("stock-market-auth-user");
           requireLogin();
           return;
         }
+
+        setStocks([]);
         setError("Unable to load your watchlist. Please try again.");
       } finally {
-        if (!controller.signal.aborted) setIsLoading(false);
+        if (!controller.signal.aborted) {
+          setIsLoading(false);
+        }
       }
     }
 
     load();
+
     return () => controller.abort();
   }, [navigate, attempt]);
 
@@ -53,34 +84,81 @@ function Watchlist() {
 
   return (
     <main className="watchlist-page">
-      <nav className="watchlist-nav" aria-label="Watchlist navigation">
-        <Link to="/dashboard" className="back-button">Back to Dashboard</Link>
-        <Link to="/account" className="back-button">Saved Information</Link>
-      </nav>
-      <h1>My Watchlist</h1>
-      <p>Your favorited stocks, together in one place. Select a stock to view its details.</p>
+      <nav
+        className="watchlist-nav"
+        aria-label="Watchlist navigation"
+      >
+        <Link to="/dashboard" className="back-button">
+          Back to Dashboard
+        </Link>
 
-      {isLoading && <p role="status">Loading your watchlist...</p>}
+        <Link to="/account" className="back-button">
+          Saved Information
+        </Link>
+      </nav>
+
+      <h1>My Watchlist</h1>
+
+      <p>
+        Your favorited stocks, together in one place.
+        Select a stock to view its details.
+      </p>
+
+      {isLoading && (
+        <p role="status">Loading your watchlist...</p>
+      )}
+
       {!isLoading && error && (
         <div className="watchlist-message">
-          <p className="form-error" role="alert">{error}</p>
-          <button className="secondary-button" onClick={retry} type="button">Try Again</button>
+          <p className="form-error" role="alert">
+            {error}
+          </p>
+
+          <button
+            className="secondary-button"
+            onClick={retry}
+            type="button"
+          >
+            Try Again
+          </button>
         </div>
       )}
+
       {!isLoading && !error && stocks.length === 0 && (
-        <section className="watchlist-message" aria-label="Empty watchlist">
+        <section
+          className="watchlist-message"
+          aria-label="Empty watchlist"
+        >
           <h2>No favorited stocks yet</h2>
+
           <p>Your saved stocks will appear here.</p>
-          <Link to="/dashboard" className="primary-button">Explore Stocks</Link>
+
+          <Link
+            to="/dashboard"
+            className="primary-button"
+          >
+            Explore Stocks
+          </Link>
         </section>
       )}
+
       {!isLoading && !error && stocks.length > 0 && (
         <section aria-label="Favorited stocks">
-          <p>{stocks.length} {stocks.length === 1 ? "stock" : "stocks"} in your watchlist</p>
+          <p>
+            {stocks.length}{" "}
+            {stocks.length === 1 ? "stock" : "stocks"}{" "}
+            in your watchlist
+          </p>
+
           <ul className="stock-grid watchlist-grid">
             {stocks.map((stock) => (
               <li key={stock.ticker}>
-                <Link className="stock-card" to={`/stocks/${encodeURIComponent(stock.ticker)}`}>
+                <Link
+                  className="stock-card"
+                  to={`/stocks/${encodeURIComponent(
+                    stock.ticker
+                  )}`}
+                >
                   <h2>{stock.ticker}</h2>
                   <p>{stock.company}</p>
                   <span>View stock details &rarr;</span>
