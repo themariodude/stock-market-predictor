@@ -14,11 +14,14 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.models.user import User
+from app.services.deployment_config import validate_deployment_config
 
 TOKEN_TTL_SECONDS = 60 * 60
 PASSWORD_HASH_ALGORITHM = "pbkdf2_sha256"
 PASSWORD_HASH_ITERATIONS = 390_000
 DEMO_PASSWORD = "SecurePass123!"
+# Development tokens expire on process restart when no key is configured.
+_DEVELOPMENT_AUTH_SECRET = secrets.token_bytes(32)
 
 
 class AuthenticationError(Exception):
@@ -48,7 +51,13 @@ def _base64url_decode(value: str) -> bytes:
 
 
 def _auth_secret() -> bytes:
-    return os.getenv("AUTH_SECRET_KEY", "development-auth-secret").encode("utf-8")
+    validate_deployment_config()
+    configured_secret = os.getenv("AUTH_SECRET_KEY")
+    return (
+        configured_secret.encode("utf-8")
+        if configured_secret
+        else _DEVELOPMENT_AUTH_SECRET
+    )
 
 
 def hash_password(password: str, salt: bytes | None = None) -> str:
@@ -102,6 +111,7 @@ def _default_password_hash() -> str:
 
 def get_registered_investor(email: str) -> RegisteredInvestor | None:
     """Return the configured registered investor account, if the email matches."""
+    validate_deployment_config()
     normalized_email = email.strip().lower()
     registered_email = os.getenv(
         "DEMO_INVESTOR_EMAIL",
@@ -114,10 +124,8 @@ def get_registered_investor(email: str) -> RegisteredInvestor | None:
     return RegisteredInvestor(
         email=registered_email,
         name=os.getenv("DEMO_INVESTOR_NAME", "Registered Investor"),
-        password_hash=os.getenv(
-            "DEMO_INVESTOR_PASSWORD_HASH",
-            _default_password_hash(),
-        ),
+        password_hash=os.getenv("DEMO_INVESTOR_PASSWORD_HASH")
+        or _default_password_hash(),
         saved_stocks=("LMT", "RTX", "NOC"),
         investment_focus="Defense-sector equities",
     )
