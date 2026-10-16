@@ -28,9 +28,10 @@ def get_db() -> Generator[Session, None, None]:
 
 def get_current_user_email(
     authorization: str | None = Header(default=None),
+    db: Session = Depends(get_db),
 ) -> str:
     """Return the authenticated investor's email."""
-    investor = _investor_from_authorization(authorization)
+    investor = _investor_from_authorization(authorization, db)
     return investor.email
 
 
