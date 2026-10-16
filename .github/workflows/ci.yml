@@ -106,6 +106,15 @@ jobs:
       - name: Build frontend
         run: npm run build
   
+  required-checks:
+    name: CI Required Checks
+    if: ${{ always() }}
+    needs:
+      - secrets-scan
+      - backend-checks
+      - frontend-checks
+      - docker-build
+      
   docker-build:
     name: Validate Docker Images
     runs-on: ubuntu-latest
