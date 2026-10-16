@@ -4,6 +4,7 @@ import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
 import StockDetail from "./pages/StockDetail";
 import Login from "./pages/Login";
+import Register from "./pages/Register";
 import Account from "./pages/Account";
 import Watchlist from "./pages/Watchlist";
 
@@ -16,6 +17,8 @@ function App() {
         <Route path="/" element={<Home />} />
         {/* Registered investor login */}
         <Route path="/login" element={<Login />} />
+        {/* New investor registration */}
+        <Route path="/register" element={<Register />} />
         {/* Saved account information */}
         <Route path="/account" element={<Account />} />
         <Route path="/watchlist" element={<Watchlist />} />
