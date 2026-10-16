@@ -67,6 +67,31 @@ def test_recorded_staging_pair_is_the_exact_production_pair(tmp_path, monkeypatc
     assert "docker push" not in script
 
 
+def test_record_claim_cannot_override_failed_staging_run(monkeypatch):
+    record = release.release_record(REPOSITORY, SHA, RUN_ID, BACKEND, FRONTEND)
+    assert record["staging_validation"] == "passed"
+
+    failed_run = {
+        "status": "completed",
+        "conclusion": "failure",
+        "head_sha": SHA,
+        "head_branch": "develop",
+        "path": ".github/workflows/staging.yml@refs/heads/develop",
+        "event": "push",
+        "repository": {"full_name": REPOSITORY},
+        "head_repository": {"full_name": REPOSITORY},
+    }
+    monkeypatch.setattr(release, "github_json", lambda path, token: failed_run)
+
+    with pytest.raises(ValueError, match="Staging run did not validate"):
+        release.verify_staging_run(REPOSITORY, SHA, RUN_ID, "test-token")
+
+    workflow = (ROOT / ".github/workflows/staging.yml").read_text(encoding="utf-8")
+    assert workflow.index("Verify staging and required CI runs") < workflow.index(
+        "Download evidence from the selected staging run"
+    )
+
+
 @pytest.mark.parametrize("changed_service", ["backend_image", "frontend_image"])
 def test_changed_registry_digest_blocks_promotion(monkeypatch, changed_service):
     record = release.release_record(REPOSITORY, SHA, RUN_ID, BACKEND, FRONTEND)

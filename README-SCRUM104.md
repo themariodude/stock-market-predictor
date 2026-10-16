@@ -19,6 +19,9 @@ digest references against a simulated registry result, and passes those exact
 references to the production deployment command builder. It confirms that the
 command pulls and checks both approved images and contains no build or push.
 Separate negative cases reject a changed backend or frontend registry digest.
+The record's `staging_validation: "passed"` is a status field, not a bypass:
+production first checks the actual GitHub staging and CI run results. A test
+confirms that a record claiming `passed` cannot authorize a failed staging run.
 
 The existing SCRUM-89 tests also check successful staging and CI runs, `main`
 ancestry, matching release metadata, digest-only production references, and
@@ -30,7 +33,7 @@ ruff check ../scripts/deploy.py ../scripts/release.py ../scripts/tests
 ruff format --check ../scripts/deploy.py ../scripts/release.py ../scripts/tests
 ```
 
-Result on October 15, 2026: **110 tests passed**; Ruff lint and formatting
+Result on October 15, 2026: **111 tests passed**; Ruff lint and formatting
 passed. These tests mock GitHub, the registry, and AWS; they establish the
 handoff logic but are not evidence of a live promotion.
 
