@@ -185,6 +185,19 @@ button {
   padding: 2rem;
 }
 
+.stock-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.stock-header h1 {
+  margin: 0;
+}
+
 .prediction-direction {
   display: flex;
   justify-content: space-between;

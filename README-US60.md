@@ -86,7 +86,9 @@ opening this PR.
   signing keys, investor passwords/hashes, and any API credentials are not reused
   from staging. Keep values in their designated secret stores, not in this checklist.
 - [ ] When production deployment is authorized, manually run Deployment from
-  `main` with target `production` and verify deployment, smoke tests, and logs.
+  `main` with target `production`, the tested staging SHA, and its run ID as
+  described in [SCRUM-89](README-SCRUM89.md). Verify deployment, smoke tests,
+  and logs.
 - [ ] Record evidence for all five acceptance criteria. Leave unverified remote
   requirements open until their configuration and behavior have been checked.
 
@@ -200,13 +202,15 @@ after a backend restart.
 ## Deployment and log behavior
 
 Pushing `develop` deploys staging. For production, manually run **Deployment**
-from the `main` branch and select `production`. This adds environment selection
+from the `main` branch and select `production` with a validated staging release
+as described in [SCRUM-89](README-SCRUM89.md). This adds environment selection
 and credential isolation; the existing frontend image still uses Vite's dev
 server, so this story does not establish production readiness for the whole app.
 
 The workflow obtains short-lived AWS credentials via OIDC and uses environment
 secrets for its target. The runner sends only fixed commands, the environment
-name, and a commit SHA through SSM. It never receives application secret values.
+name, a commit SHA, and validated image digest references through SSM. It never
+receives application secret values.
 The host supplies them to containers from its protected environment file.
 
 The script disables shell tracing before deployment and redirects remote command

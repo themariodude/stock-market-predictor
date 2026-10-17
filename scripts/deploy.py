@@ -8,12 +8,37 @@ import subprocess
 import sys
 import time
 
+IMAGE_REF_PATTERN = re.compile(
+    r"ghcr\.io/([a-z0-9]+(?:[.-][a-z0-9]+)*)/"
+    r"stock-market-predictor-(backend|frontend)@sha256:[0-9a-f]{64}"
+)
 
-def deployment_commands(environment: str, image_tag: str) -> list[str]:
+
+def deployment_commands(
+    environment: str,
+    image_tag: str,
+    backend_image: str | None = None,
+    frontend_image: str | None = None,
+) -> list[str]:
     if environment not in {"staging", "production"}:
         raise ValueError("Unsupported deployment environment.")
     if not re.fullmatch(r"[0-9a-f]{40}", image_tag):
         raise ValueError("IMAGE_TAG must be a full Git commit SHA.")
+    if bool(backend_image) != bool(frontend_image):
+        raise ValueError("Both image digests are required together.")
+    if environment == "production" and not backend_image:
+        raise ValueError("Production requires approved digest-pinned images.")
+    if backend_image:
+        backend_match = IMAGE_REF_PATTERN.fullmatch(backend_image)
+        frontend_match = IMAGE_REF_PATTERN.fullmatch(frontend_image)
+        if (
+            not backend_match
+            or not frontend_match
+            or backend_match.group(2) != "backend"
+            or frontend_match.group(2) != "frontend"
+            or backend_match.group(1) != frontend_match.group(1)
+        ):
+            raise ValueError("Invalid backend or frontend image digest reference.")
 
     # Preserve the existing staging Compose project and its database volume.
     project = "stock-market-predictor"
@@ -24,7 +49,7 @@ def deployment_commands(environment: str, image_tag: str) -> list[str]:
         f"docker compose --project-name {project} --env-file {env_file} "
         "-f docker-compose.staging.yml"
     )
-    return [
+    commands = [
         "set +x",
         "set -eu",
         "umask 077",
@@ -37,9 +62,27 @@ def deployment_commands(environment: str, image_tag: str) -> list[str]:
         f'test "$(stat -c %a {env_file})" = 600',
         f'test "$(stat -c %u {env_file})" = 0',
         f"export APP_ENV={environment} IMAGE_TAG={image_tag}",
-        f"{compose} pull --quiet",
-        f"{compose} up -d --remove-orphans --wait --wait-timeout 180",
     ]
+    if backend_image:
+        commands.append(
+            f"export BACKEND_IMAGE={backend_image} FRONTEND_IMAGE={frontend_image}"
+        )
+    commands.extend(
+        [
+            f"{compose} pull --quiet",
+            f"{compose} up -d --remove-orphans --wait --wait-timeout 180",
+        ]
+    )
+    if backend_image:
+        for service, image in (
+            ("backend", backend_image),
+            ("frontend", frontend_image),
+        ):
+            commands.append(
+                f'test "$(docker inspect --format "{{{{.Config.Image}}}}" '
+                f'"$({compose} ps -q {service})")" = "{image}"'
+            )
+    return commands
 
 
 def aws(*arguments: str) -> str:
@@ -52,8 +95,16 @@ def aws(*arguments: str) -> str:
     return result.stdout.strip()
 
 
-def deploy(environment: str, image_tag: str, instance_id: str) -> None:
-    commands = deployment_commands(environment, image_tag)
+def deploy(
+    environment: str,
+    image_tag: str,
+    instance_id: str,
+    backend_image: str | None = None,
+    frontend_image: str | None = None,
+) -> None:
+    commands = deployment_commands(
+        environment, image_tag, backend_image, frontend_image
+    )
     if not re.fullmatch(r"i-[0-9a-f]{8,17}", instance_id):
         raise ValueError("DEPLOY_INSTANCE_ID must be an EC2 instance ID.")
     command_id = aws(
@@ -113,6 +164,8 @@ def main() -> int:
             args.environment,
             os.getenv("IMAGE_TAG", ""),
             os.getenv("DEPLOY_INSTANCE_ID", ""),
+            os.getenv("BACKEND_IMAGE") or None,
+            os.getenv("FRONTEND_IMAGE") or None,
         )
     except (RuntimeError, ValueError, OSError):
         print("Deployment failed. Check configuration and protected host diagnostics.")
