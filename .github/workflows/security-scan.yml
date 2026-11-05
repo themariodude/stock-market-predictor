@@ -4,7 +4,10 @@ on:
   pull_request:
     branches: [develop, main]
   push:
-    branches: [develop, main]
+    branches:
+      - develop
+      - main
+      - "feature/**"
   workflow_dispatch:
 
 permissions:
@@ -75,20 +78,21 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - - name: Build backend image
-          run: |
-            docker build --pull \
-              -t soc2-backend \
-              -f infra/docker/Dockerfile.backend .
+      - name: Build backend image
+        run: |
+          docker build --pull \
+            -t soc2-backend \
+            -f infra/docker/Dockerfile.backend .
 
       - name: Scan backend image
-          uses: aquasecurity/trivy-action@master
-          with:
-            image-ref: soc2-backend
-            scanners: vuln
-            severity: HIGH,CRITICAL
-            exit-code: "1"
-            ignore-unfixed: true
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: soc2-backend
+          scanners: vuln
+          format: table
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+          ignore-unfixed: true
 
   frontend-container:
     name: Frontend Container Audit
@@ -99,12 +103,16 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Build frontend image
-        run: docker build -t soc2-frontend -f infra/docker/Dockerfile.frontend .
+        run: |
+          docker build --pull \
+            -t soc2-frontend \
+            -f infra/docker/Dockerfile.frontend .
 
       - name: Scan frontend image
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: soc2-frontend
+          scanners: vuln
           format: table
           severity: HIGH,CRITICAL
           exit-code: "1"
