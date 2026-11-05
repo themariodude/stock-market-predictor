@@ -86,6 +86,11 @@ jobs:
             -t soc2-backend \
             -f infra/docker/Dockerfile.backend .
 
+      - name: Verify backend setuptools version
+        run: |
+          docker run --rm soc2-backend sh -c \
+            'python -m pip show setuptools || echo "setuptools not installed"'
+
       - name: Scan backend image
         uses: aquasecurity/trivy-action@master
         with:
