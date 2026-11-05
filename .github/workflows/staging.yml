@@ -108,8 +108,8 @@ jobs:
 
       - name: Check deployment scripts
         run: |
-          ruff check ../scripts/deploy.py ../scripts/release.py ../scripts/tests
-          ruff format --check ../scripts/deploy.py ../scripts/release.py ../scripts/tests
+          ruff check ../scripts/deploy.py ../scripts/release.py ../scripts/smoke_ssm.py ../scripts/tests
+          ruff format --check ../scripts/deploy.py ../scripts/release.py ../scripts/smoke_ssm.py ../scripts/tests
           python -m pytest ../scripts/tests
 
   frontend-checks:
@@ -183,7 +183,7 @@ jobs:
       - name: Build frontend image
         run: |
           docker build \
-            -f infra/docker/Dockerfile.frontend \
+            -f infra/docker/Dockerfile.frontend-production \
             -t ghcr.io/${{ github.repository_owner }}/stock-market-predictor-frontend:${{ github.sha }} \
             .
 
@@ -231,7 +231,10 @@ jobs:
           IMAGE_TAG: ${{ github.sha }}
           BACKEND_IMAGE: ${{ needs.build-and-push.outputs.backend_image }}
           FRONTEND_IMAGE: ${{ needs.build-and-push.outputs.frontend_image }}
-        run: python3 scripts/deploy.py --environment staging
+        run: |
+          DEPLOY_COMPOSE_SHA256="$(sha256sum docker-compose.staging.yml | cut -d ' ' -f1)"
+          export DEPLOY_COMPOSE_SHA256
+          python3 scripts/deploy.py --environment staging
 
   smoke-test:
     needs: deploy
@@ -241,19 +244,26 @@ jobs:
 
     permissions:
       contents: read
+      id-token: write
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
-      - name: Run post-deployment smoke tests
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+          mask-aws-account-id: true
+          role-session-name: github-smoke-${{ github.run_id }}
+
+      - name: Run staging smoke tests through SSM
         env:
-          SMOKE_BACKEND_URL: ${{ secrets.SMOKE_BACKEND_URL }}
-          SMOKE_FRONTEND_URL: ${{ secrets.SMOKE_FRONTEND_URL }}
-        run: |
-          : "${SMOKE_BACKEND_URL:?SMOKE_BACKEND_URL secret is not set}"
-          : "${SMOKE_FRONTEND_URL:?SMOKE_FRONTEND_URL secret is not set}"
-          python3 scripts/smoke_test.py
+          DEPLOY_INSTANCE_ID: ${{ secrets.DEPLOY_INSTANCE_ID }}
+        run: python3 scripts/smoke_ssm.py
 
   record-release:
     needs:
