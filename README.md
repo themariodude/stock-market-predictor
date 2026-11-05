@@ -6,6 +6,8 @@ Tested-image promotion to production: [SCRUM-89](README-SCRUM89.md).
 
 Required CI and protected-branch setup: [US-56](README-US56.md).
 
+Backend API response contracts and CI checks: [API contracts](backend/API_CONTRACTS.md).
+
 ## View Watchlist
 
 Open **My Watchlist** from the dashboard or account page, or visit `/watchlist`.
