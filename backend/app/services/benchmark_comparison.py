@@ -21,9 +21,7 @@ def _prices_by_date(history: dict[str, Any]) -> dict[date, float]:
         price = float(record["close"])
 
         if not isfinite(price) or price <= 0:
-            raise ValueError(
-                "Historical closing prices must be positive and finite."
-            )
+            raise ValueError("Historical closing prices must be positive and finite.")
 
         if day in prices:
             raise ValueError("Duplicate historical trading date.")
@@ -61,19 +59,17 @@ def compare_stock_against_spy(
 
     first, last = shared_dates[0], shared_dates[-1]
 
-    stock_return = (
-        stock_prices[last] / stock_prices[first] - 1
-    ) * 100
+    stock_return = (stock_prices[last] / stock_prices[first] - 1) * 100
 
-    benchmark_return = (
-        benchmark_prices[last] / benchmark_prices[first] - 1
-    ) * 100
+    benchmark_return = (benchmark_prices[last] / benchmark_prices[first] - 1) * 100
 
     excess = stock_return - benchmark_return
 
     status = (
-        "MATCHED" if abs(excess) < 1e-9
-        else "OUTPERFORMED" if excess > 0
+        "MATCHED"
+        if abs(excess) < 1e-9
+        else "OUTPERFORMED"
+        if excess > 0
         else "UNDERPERFORMED"
     )
 

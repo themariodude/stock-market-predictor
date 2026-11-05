@@ -7,10 +7,7 @@ def history(ticker, points):
     return {
         "ticker": ticker,
         "time_range": "1Y",
-        "data": [
-            {"date": day, "close": price}
-            for day, price in points
-        ],
+        "data": [{"date": day, "close": price} for day, price in points],
     }
 
 
