@@ -298,6 +298,84 @@ button {
   background: #131c26;
 }
 
+.risk-performance,
+.model-performance {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  border: 1px solid #2d3742;
+  border-radius: 8px;
+  background: #131c26;
+}
+
+.risk-performance h2,
+.model-performance h2 {
+  margin-top: 0;
+}
+
+.risk-performance > p,
+.model-performance > p,
+.risk-metric-card small {
+  color: #aeb9c5;
+}
+
+.risk-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 1rem;
+  margin: 1.25rem 0 0;
+}
+
+.risk-metric-card {
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid #2d3742;
+  border-radius: 8px;
+  background: #18232e;
+}
+
+.risk-metric-card dt {
+  color: #aeb9c5;
+  font-size: 0.9rem;
+}
+
+.risk-metric-card dd {
+  margin: 0.5rem 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+.risk-metric-card small {
+  display: block;
+  line-height: 1.4;
+}
+
+.risk-method-note {
+  margin-bottom: 0;
+  font-size: 0.9rem;
+}
+
+.model-metrics-table-wrap {
+  overflow-x: auto;
+}
+
+.model-metrics-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.model-metrics-table th,
+.model-metrics-table td {
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid #2d3742;
+}
+
+.model-metrics-table thead th {
+  color: #aeb9c5;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
 .economic-factors h2,
 .prediction-factors h2 {
   margin-top: 0;
