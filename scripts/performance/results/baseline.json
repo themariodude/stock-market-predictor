@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-11-04T00:00:00+00:00",
+  "measurement_status": "not_run",
+  "reason": "No backend process was listening on port 8000 and FastAPI is not installed in the available Python environment.",
+  "required_next_step": "Start the backend with its configured dependencies and run the command in scripts/performance/README.md to populate numeric baseline metrics."
+}
