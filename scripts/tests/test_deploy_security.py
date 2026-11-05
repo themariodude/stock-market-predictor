@@ -134,3 +134,34 @@ def test_no_real_environment_files_are_tracked():
         assert not (name == ".env" or name.startswith(".env.")) or name.endswith(
             ".example"
         )
+
+
+def test_staging_compose_checksum_checked_before_docker_pull(monkeypatch):
+    expected = "d" * 64
+    monkeypatch.setenv("DEPLOY_COMPOSE_SHA256", expected)
+
+    commands = deployment.deployment_commands(
+        "staging", "a" * 40, BACKEND_IMAGE, FRONTEND_IMAGE
+    )
+    script = "\n".join(commands)
+
+    assert f'= "{expected}"' in script
+    assert "sha256sum docker-compose.staging.yml" in script
+    assert script.index("sha256sum docker-compose.staging.yml") < script.index(
+        "pull --quiet"
+    )
+
+
+def test_staging_rejects_invalid_compose_checksum(monkeypatch):
+    monkeypatch.setenv("DEPLOY_COMPOSE_SHA256", "invalid-checksum")
+
+    with pytest.raises(ValueError, match="Invalid staging Compose checksum"):
+        deployment.deployment_commands("staging", "a" * 40)
+
+
+def test_staging_cli_rejects_missing_compose_checksum(monkeypatch, capsys):
+    monkeypatch.delenv("DEPLOY_COMPOSE_SHA256", raising=False)
+    monkeypatch.setattr("sys.argv", ["deploy.py", "--environment", "staging"])
+
+    assert deployment.main() == 1
+    assert "Deployment failed" in capsys.readouterr().out

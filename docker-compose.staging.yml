@@ -30,8 +30,6 @@ services:
       FRED_API_KEY: ${FRED_API_KEY:-}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       CORS_ORIGINS: ${CORS_ORIGINS}
-    ports:
-      - "${BACKEND_PORT:-8000}:8000"
     depends_on:
       db:
         condition: service_healthy
@@ -49,10 +47,8 @@ services:
 
   frontend:
     image: ${FRONTEND_IMAGE:-ghcr.io/${GHCR_OWNER}/stock-market-predictor-frontend:${IMAGE_TAG}}
-    environment:
-      VITE_API_BASE_URL: ${VITE_API_BASE_URL}
     ports:
-      - "${FRONTEND_PORT:-5173}:5173"
+      - "80:80"
     depends_on:
       backend:
         condition: service_healthy

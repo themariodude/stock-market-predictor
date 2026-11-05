@@ -154,6 +154,16 @@ jobs:
           cache-from: type=gha,scope=backend
           cache-to: type=gha,mode=max,scope=backend
 
+      - name: Validate production Nginx frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./infra/docker/Dockerfile.frontend-production
+          push: false
+          tags: stock-market-predictor-frontend-production:ci
+          cache-from: type=gha,scope=frontend-production
+          cache-to: type=gha,mode=max,scope=frontend-production
+
       - name: Build frontend Docker image
         uses: docker/build-push-action@v6
         with:
