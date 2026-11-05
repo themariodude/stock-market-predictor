@@ -108,8 +108,8 @@ jobs:
 
       - name: Check deployment scripts
         run: |
-          ruff check ../scripts/deploy.py ../scripts/release.py ../scripts/tests
-          ruff format --check ../scripts/deploy.py ../scripts/release.py ../scripts/tests
+          ruff check ../scripts/deploy.py ../scripts/release.py ../scripts/smoke_ssm.py ../scripts/tests
+          ruff format --check ../scripts/deploy.py ../scripts/release.py ../scripts/smoke_ssm.py ../scripts/tests
           python -m pytest ../scripts/tests
 
   frontend-checks:
