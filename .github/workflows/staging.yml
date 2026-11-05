@@ -229,6 +229,7 @@ jobs:
         env:
           DEPLOY_INSTANCE_ID: ${{ secrets.DEPLOY_INSTANCE_ID }}
           IMAGE_TAG: ${{ github.sha }}
+          DEPLOY_COMPOSE_SHA256: ${{ hashFiles('docker-compose.staging.yml') }}
           BACKEND_IMAGE: ${{ needs.build-and-push.outputs.backend_image }}
           FRONTEND_IMAGE: ${{ needs.build-and-push.outputs.frontend_image }}
         run: python3 scripts/deploy.py --environment staging
