@@ -2,12 +2,14 @@ name: SOC 2 Security Scanning
 
 on:
   pull_request:
-    branches: [develop, main]
+    branches:
+      - develop
+      - main
+
   push:
     branches:
       - develop
       - main
-      - "feature/**"
   workflow_dispatch:
 
 permissions:
