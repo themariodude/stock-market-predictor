@@ -2,7 +2,6 @@ from datetime import date
 from math import isfinite
 from typing import Any
 
-
 BENCHMARK_TICKER = "SPY"
 SUPPORTED_STOCKS = frozenset({"LMT", "RTX", "NOC", "GD", "LHX", "BA"})
 
