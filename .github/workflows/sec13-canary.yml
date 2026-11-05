@@ -50,3 +50,31 @@ jobs:
           file: ./infra/docker/Dockerfile.frontend-production
           push: true
           tags: ghcr.io/${{ github.repository_owner }}/stock-market-predictor-frontend:sec13-${{ github.sha }}
+
+  verify-ssm-smoke:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install test tools
+        run: python3 -m pip install pytest ruff
+
+      - name: Lint deployment and smoke-test scripts
+        run: |
+          ruff check scripts/deploy.py scripts/release.py scripts/smoke_ssm.py scripts/tests
+          ruff format --check scripts/deploy.py scripts/release.py scripts/smoke_ssm.py scripts/tests
+
+      - name: Run deployment security tests
+        run: python3 -m pytest -q scripts/tests
