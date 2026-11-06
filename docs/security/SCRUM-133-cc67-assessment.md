@@ -260,3 +260,77 @@ require additional verification.
 6. Verify certificate trust, expiration, and hostname.
 7. Reassess internal service communication protection.
 8. Repeat AC02, AC03, AC04, AC06, and AC07 tests.
+
+## AC05: Internal Transmission Protection
+
+### Assessment Environment
+- AWS Region: us-west-1
+- Instance: smp-staging
+- Inspection method: AWS Systems Manager Session Manager
+- Assessment date: November 5, 2026
+
+### PostgreSQL TLS Verification
+
+Command:
+sudo docker exec stock-market-predictor-db-1 \
+  psql -U smp -d smp -tAc "SHOW ssl;"
+
+Actual result:
+off
+
+Finding:
+PostgreSQL server-side TLS is disabled in the inspected
+staging environment.
+
+### Docker Network Inspection
+
+Commands:
+sudo docker network inspect stock-market-predictor_default \
+  --format 'Driver={{.Driver}} Internal={{.Internal}}'
+
+sudo docker network inspect stock-market-predictor_default \
+  --format '{{range .Containers}}{{println .Name}}{{end}}'
+
+Actual results:
+- Driver: bridge
+- Internal: false
+- Connected containers:
+  - stock-market-predictor-frontend-1
+  - stock-market-predictor-backend-1
+  - stock-market-predictor-db-1
+
+### Network Protection Findings
+
+The frontend, backend, and database share a Docker bridge
+network on the staging EC2 host.
+
+The database does not publish port 5432 to the EC2 host.
+
+Nginx forwards API requests to FastAPI using HTTP.
+
+PostgreSQL TLS is disabled.
+
+These observations demonstrate missing transport encryption
+mechanisms on inspected internal communication paths.
+
+Docker network isolation reduces external exposure but does
+not independently establish encryption or complete
+protection against unauthorized interception.
+
+### AC05 Status
+
+Partially verified, with confirmed missing TLS mechanisms.
+
+The acceptance criterion remains unmet pending verification
+of adequate compensating network protections or remediation
+of the identified transport encryption gaps.
+
+### Remaining Work
+
+1. Assess whether Docker bridge isolation provides adequate
+   protection for the deployment trust boundaries.
+2. Evaluate PostgreSQL TLS configuration requirements.
+3. Evaluate encryption for Nginx-to-FastAPI connections.
+4. Coordinate infrastructure remediation with the team.
+5. Retest the affected communication paths.
+6. Document evidence supporting any compensating controls.
