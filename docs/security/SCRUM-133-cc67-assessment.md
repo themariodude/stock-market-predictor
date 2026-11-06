@@ -181,3 +181,82 @@ acceptance criterion remains pending.
 - Inspect AWS security-group restrictions.
 - Validate TLS certificates and termination configuration.
 - Repeat relevant tests after any security remediation.
+
+## AWS Staging Infrastructure Verification
+
+### Environment
+- Region: us-west-1
+- Instance: smp-staging
+- Assessment date: November 5, 2026
+- Access method: AWS Systems Manager Session Manager
+- Inspection method: Read-only configuration and HTTP requests
+
+### AWS Network Findings
+- EC2 instance is running with a public IPv4 address.
+- Inbound TCP port 80 is restricted to one IPv4 /32 source.
+- Inbound TCP port 22 is restricted to the same /32 source.
+- No inbound port 443 rule was identified.
+- No Elastic Load Balancers were found in us-west-1.
+- No AWS Certificate Manager certificates were found in us-west-1.
+
+### Docker and Nginx Findings
+- Frontend container publishes host port 80.
+- Backend container exposes port 8000 internally.
+- PostgreSQL container exposes port 5432 internally.
+- Nginx listens on port 80.
+- Nginx proxies /api/ requests to http://backend:8000/.
+- No Nginx TLS certificate or HTTPS listener was configured.
+- No HTTP-to-HTTPS redirect was configured.
+
+### Staging HTTP Verification
+
+Test:
+GET http://127.0.0.1/api/auth/me
+
+Execution:
+November 5, 2026, 5:16:38 PM PST
+
+Expected:
+Sensitive public API requests should use HTTPS.
+Insecure public HTTP authentication paths should be
+rejected for insecure transport or safely redirected.
+
+Actual:
+HTTP 401 Unauthorized.
+Server: nginx/1.30.6.
+WWW-Authenticate: Bearer.
+No HTTPS redirect was observed.
+
+Credentials submitted:
+None.
+
+Interpretation:
+The staging Nginx-to-FastAPI authentication route is
+reachable through HTTP from the EC2 host.
+
+The request was rejected for missing authentication,
+not because HTTP transport was insecure.
+
+This identifies a staging HTTP-handling configuration
+gap. External reachability and actual credential
+transmission were not demonstrated by this test.
+
+### Interim Control Status
+
+CC6.7 remains partially verified.
+
+AC03 failed for the tested staging HTTP authentication
+path. Public exposure and complete HTTPS enforcement
+require additional verification.
+
+### Recommended Remediation
+1. Coordinate HTTPS/TLS implementation with the
+   infrastructure owner.
+2. Identify an appropriate TLS termination component.
+3. Configure HTTPS for sensitive application requests.
+4. Redirect ordinary HTTP navigation to HTTPS.
+5. Reject insecure authentication submissions before
+   credentials are processed.
+6. Verify certificate trust, expiration, and hostname.
+7. Reassess internal service communication protection.
+8. Repeat AC02, AC03, AC04, AC06, and AC07 tests.
