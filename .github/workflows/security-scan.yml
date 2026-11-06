@@ -1,0 +1,157 @@
+
+name: SOC 2 Security Scanning
+
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backend-dependencies:
+    name: Backend Dependency Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install pip-audit
+        run: python -m pip install pip-audit==2.10.1
+
+      - name: Audit backend dependencies
+        run: |
+          python -m pip_audit \
+            -r backend/requirements.txt \
+            -f json \
+            -o backend-audit.json
+
+      - name: Upload backend audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-audit
+          path: backend-audit.json
+          if-no-files-found: warn
+          retention-days: 30
+
+  frontend-dependencies:
+    name: Frontend Dependency Audit
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Audit frontend dependencies
+        run: npm audit --audit-level=high
+
+  backend-container:
+    name: Backend Container Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build backend image
+        run: |
+          docker build --pull \
+            -t soc2-backend \
+            -f infra/docker/Dockerfile.backend .
+
+      - name: Inspect backend packaging dependencies
+        run: |
+          docker run --rm --entrypoint python soc2-backend -c "
+          import importlib.metadata as m
+
+          for name in ['setuptools', 'wheel', 'jaraco.context']:
+              print('PACKAGE:', name)
+              matches = [
+                  d for d in m.distributions()
+                  if d.metadata.get('Name', '').lower().replace('_', '-')
+                  == name.lower()
+              ]
+              if not matches:
+                  print('  NOT INSTALLED')
+              for d in matches:
+                  print('  Version:', d.version)
+                  print('  Metadata:', d._path)
+          "
+
+      - name: Generate detailed backend Trivy report
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: soc2-backend
+          scanners: vuln
+          format: json
+          output: backend-trivy.json
+          severity: HIGH,CRITICAL
+          exit-code: "0"
+          ignore-unfixed: true
+
+      - name: Upload backend Trivy evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-trivy-report
+          path: backend-trivy.json
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Enforce backend vulnerability policy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: soc2-backend
+          scanners: vuln
+          format: table
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+          ignore-unfixed: true
+
+  frontend-container:
+    name: Frontend Container Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build frontend image
+        run: |
+          docker build --pull \
+            -t soc2-frontend \
+            -f infra/docker/Dockerfile.frontend .
+
+      - name: Scan frontend image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: soc2-frontend
+          scanners: vuln
+          format: table
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+          ignore-unfixed: true

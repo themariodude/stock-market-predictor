@@ -1,43 +1,44 @@
-# Patch version + Debian release pinned — no silent base moves.
-FROM python:3.12.7-slim-bookworm
+# Python 3.12 on Debian Bookworm.
+FROM python:3.12-slim-bookworm
 
-# Unbuffered logs so `docker compose logs` shows output live.
+# Unbuffered Python output.
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
-# CI builds with true to get pytest inside the image.
+# Install available Debian security updates.
+# Remove package lists to keep the image smaller.
+RUN apt-get update \
+    && apt-get upgrade -y \
+    && rm -rf /var/lib/apt/lists/*
+
+# CI can install development dependencies.
 ARG INSTALL_DEV=false
 
-# Created before COPY so --chown sets ownership inline; a later chown -R
-# would duplicate the whole tree into a new layer.
-# uid 1000 matches the host user, so bind-mounted files stay writable.
-# bash, not nologin — we need `compose exec backend pytest`.
+# Create non-root application user.
 RUN useradd --create-home --uid 1000 --shell /bin/bash appuser \
     && mkdir -p /app \
     && chown appuser:appuser /app
 
-# backend/ is the Python import root and its contents land here.
 WORKDIR /app
 
-# Deps before source: this layer survives code edits.
+# Copy dependency files first for Docker caching.
 COPY --chown=appuser:appuser backend/requirements.txt backend/requirements-dev.txt ./
 
-# Either/or — requirements-dev.txt already does `-r requirements.txt`.
+# Install application dependencies.
+# Upgrade setuptools only if already installed.
 RUN python -m pip install --no-cache-dir --upgrade pip \
     && if [ "$INSTALL_DEV" = "true" ]; then \
          python -m pip install --no-cache-dir -r requirements-dev.txt; \
        else \
          python -m pip install --no-cache-dir -r requirements.txt; \
-       fi
+       fi \
+    && python -m pip uninstall -y setuptools
 
-# Contents of backend/ go directly in /app, so app/ and pytest.ini sit at
-# the import root.
+# Copy backend application.
 COPY --chown=appuser:appuser backend/ ./
 
 USER appuser
 
 EXPOSE 8000
 
-# app.main:app, not backend.app.main:app — /app is the import root.
-# Migrations deliberately excluded: they race when replicas start together.
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
