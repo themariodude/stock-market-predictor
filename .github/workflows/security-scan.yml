@@ -1,15 +1,11 @@
+
 name: SOC 2 Security Scanning
 
 on:
   pull_request:
-    branches:
-      - develop
-      - main
-
+    branches: [develop, main]
   push:
-    branches:
-      - develop
-      - main
+    branches: [develop, main, "feature/**"]
   workflow_dispatch:
 
 permissions:
@@ -46,6 +42,7 @@ jobs:
           name: backend-audit
           path: backend-audit.json
           if-no-files-found: warn
+          retention-days: 30
 
   frontend-dependencies:
     name: Frontend Dependency Audit
@@ -71,7 +68,6 @@ jobs:
 
       - name: Audit frontend dependencies
         run: npm audit --audit-level=high
-
 
   backend-container:
     name: Backend Container Audit
@@ -106,18 +102,27 @@ jobs:
                   print('  Metadata:', d._path)
           "
 
-      - name: Scan backend image
+      - name: Generate detailed backend Trivy report
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: soc2-backend
           scanners: vuln
-          format: table
+          format: json
+          output: backend-trivy.json
           severity: HIGH,CRITICAL
-          exit-code: "1"
+          exit-code: "0"
           ignore-unfixed: true
 
+      - name: Upload backend Trivy evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-trivy-report
+          path: backend-trivy.json
+          if-no-files-found: warn
+          retention-days: 30
 
-      - name: Scan backend image
+      - name: Enforce backend vulnerability policy
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: soc2-backend
