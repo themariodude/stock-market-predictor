@@ -1,0 +1,23 @@
+SCRUM-133 — CC6.7 Security Verification
+Execution date (UTC): 2026-11-06 02:11:36 UTC
+Git branch: feature/SCRUM-133-transmission-security
+Git commit: 533d25d02a613dbad049ea48e7a19cbc48d623e3
+
+=== Ruff Lint ===
+All checks passed!
+
+=== Ruff Formatting ===
+58 files already formatted
+
+=== Backend Tests ===
+........................................................................ [ 27%]
+........................................................................ [ 54%]
+........................................................................ [ 81%]
+.................................................                        [100%]
+=============================== warnings summary ===============================
+../.venv/lib/python3.12/site-packages/starlette/testclient.py:40
+  /Users/luisaldana/Documents/GitHub/stock-market-predictor/.venv/lib/python3.12/site-packages/starlette/testclient.py:40: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.
+    _PortalFactoryType = typing.Callable[[], typing.ContextManager[anyio.abc.BlockingPortal]]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+265 passed, 1 warning in 3.48s
