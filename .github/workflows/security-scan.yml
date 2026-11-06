@@ -72,6 +72,7 @@ jobs:
       - name: Audit frontend dependencies
         run: npm audit --audit-level=high
 
+
   backend-container:
     name: Backend Container Audit
     runs-on: ubuntu-latest
@@ -86,10 +87,35 @@ jobs:
             -t soc2-backend \
             -f infra/docker/Dockerfile.backend .
 
-      - name: Verify backend setuptools version
+      - name: Inspect backend packaging dependencies
         run: |
-          docker run --rm soc2-backend sh -c \
-            'python -m pip show setuptools || echo "setuptools not installed"'
+          docker run --rm --entrypoint python soc2-backend -c "
+          import importlib.metadata as m
+
+          for name in ['setuptools', 'wheel', 'jaraco.context']:
+              print('PACKAGE:', name)
+              matches = [
+                  d for d in m.distributions()
+                  if d.metadata.get('Name', '').lower().replace('_', '-')
+                  == name.lower()
+              ]
+              if not matches:
+                  print('  NOT INSTALLED')
+              for d in matches:
+                  print('  Version:', d.version)
+                  print('  Metadata:', d._path)
+          "
+
+      - name: Scan backend image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: soc2-backend
+          scanners: vuln
+          format: table
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+          ignore-unfixed: true
+
 
       - name: Scan backend image
         uses: aquasecurity/trivy-action@master
