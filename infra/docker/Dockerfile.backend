@@ -32,9 +32,8 @@ RUN python -m pip install --no-cache-dir --upgrade pip \
        else \
          python -m pip install --no-cache-dir -r requirements.txt; \
        fi \
-    && if python -m pip show setuptools > /dev/null 2>&1; then \
-         python -m pip install --no-cache-dir --upgrade "setuptools>=78.1.1"; \
-       fi
+    && python -m pip install --no-cache-dir --upgrade "setuptools==80.9.0" \
+    && python -m pip show setuptools
 
 # Copy backend application.
 COPY --chown=appuser:appuser backend/ ./
