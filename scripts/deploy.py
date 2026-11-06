@@ -67,6 +67,18 @@ def deployment_commands(
         commands.append(
             f"export BACKEND_IMAGE={backend_image} FRONTEND_IMAGE={frontend_image}"
         )
+    expected_sha = os.getenv("DEPLOY_COMPOSE_SHA256")
+
+    if environment == "staging" and expected_sha is not None:
+        if not re.fullmatch(r"[0-9a-f]{64}", expected_sha):
+            raise ValueError("Invalid staging Compose checksum.")
+
+        commands.append(
+            'test "$(sha256sum docker-compose.staging.yml '
+            "| cut -d ' ' -f1)\" = "
+            f'"{expected_sha}"'
+        )
+
     commands.extend(
         [
             f"{compose} pull --quiet",
@@ -160,6 +172,9 @@ def main() -> int:
     )
     args = parser.parse_args()
     try:
+        if args.environment == "staging" and not os.getenv("DEPLOY_COMPOSE_SHA256"):
+            raise ValueError("Staging Compose checksum is required.")
+
         deploy(
             args.environment,
             os.getenv("IMAGE_TAG", ""),
