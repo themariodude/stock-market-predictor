@@ -4,7 +4,7 @@ import os
 import smtplib
 import ssl
 from email.message import EmailMessage
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlsplit
 
 
 def send_password_reset_email(email: str, token: str) -> None:
@@ -15,6 +15,24 @@ def send_password_reset_email(email: str, token: str) -> None:
     smtp_password = os.environ["SMTP_PASSWORD"]
     sender = os.environ["PASSWORD_RESET_FROM_EMAIL"]
     reset_url = os.environ["PASSWORD_RESET_URL"]
+
+    # SCRUM-133: Require HTTPS for deployed password-reset links.
+    if os.getenv("APP_ENV", "development").strip().lower() in {
+        "staging",
+        "production",
+    }:
+        parsed_url = urlsplit(reset_url)
+
+        if (
+            parsed_url.scheme != "https"
+            or not parsed_url.hostname
+            or parsed_url.username is not None
+            or parsed_url.password is not None
+        ):
+            raise ValueError(
+                "PASSWORD_RESET_URL must be a valid HTTPS URL "
+                "in deployed environments."
+            )
 
     separator = "&" if "?" in reset_url else "?"
     link = f"{reset_url}{separator}{urlencode({'token': token})}"
