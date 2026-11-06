@@ -5,6 +5,7 @@ import pytest
 
 from app.services.historical_stock_data import (
     HistoricalStockDataError,
+    calculate_risk_metrics,
     get_historical_stock_data,
 )
 
@@ -30,6 +31,26 @@ def test_empty_ticker_raises_value_error():
 def test_invalid_time_range_raises_value_error():
     with pytest.raises(ValueError):
         get_historical_stock_data("LMT", "17Y")
+
+
+def test_calculate_risk_metrics_from_daily_prices():
+    metrics = calculate_risk_metrics([100, 110, 99, 108.9], "close")
+
+    assert metrics["price_basis"] == "close"
+    assert metrics["price_observations"] == 4
+    assert metrics["daily_return_observations"] == 3
+    assert metrics["period_return"] == pytest.approx(0.089)
+    assert metrics["annualized_volatility"] == pytest.approx(1.83303027798)
+    assert metrics["max_drawdown"] == pytest.approx(-0.1)
+    assert metrics["best_daily_return"] == pytest.approx(0.1)
+    assert metrics["worst_daily_return"] == pytest.approx(-0.1)
+
+
+def test_volatility_is_unavailable_with_fewer_than_two_daily_returns():
+    metrics = calculate_risk_metrics([100, 110], "close")
+
+    assert metrics["period_return"] == pytest.approx(0.1)
+    assert metrics["annualized_volatility"] is None
 
 
 @patch("app.services.historical_stock_data.yf.Ticker")
@@ -71,6 +92,29 @@ def test_historical_records_are_formatted_correctly(mock_ticker):
 
     assert result["data"][1]["close"] == 488.90
     assert result["data"][1]["volume"] == 1350000
+
+
+@patch("app.services.historical_stock_data.yf.Ticker")
+def test_risk_metrics_use_adjusted_close_when_available(mock_ticker):
+    mock_stock = Mock()
+    mock_stock.history.return_value = pd.DataFrame(
+        {
+            "Open": [99.0, 79.0, 109.0],
+            "High": [101.0, 81.0, 111.0],
+            "Low": [98.0, 78.0, 108.0],
+            "Close": [100.0, 80.0, 110.0],
+            "Adj Close": [100.0, 95.0, 110.0],
+            "Volume": [1000, 1100, 1200],
+        },
+        index=pd.to_datetime(["2026-09-08", "2026-09-09", "2026-09-10"]),
+    )
+    mock_ticker.return_value = mock_stock
+
+    result = get_historical_stock_data("LMT", "1M")
+
+    assert result["risk_metrics"]["price_basis"] == "adjusted_close"
+    assert result["risk_metrics"]["period_return"] == pytest.approx(0.1)
+    assert result["risk_metrics"]["max_drawdown"] == pytest.approx(-0.05)
 
 
 @patch("app.services.historical_stock_data.yf.Ticker")
