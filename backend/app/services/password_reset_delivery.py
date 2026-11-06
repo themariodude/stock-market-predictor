@@ -2,6 +2,7 @@
 
 import os
 import smtplib
+import ssl
 from email.message import EmailMessage
 from urllib.parse import urlencode
 
@@ -30,6 +31,6 @@ def send_password_reset_email(email: str, token: str) -> None:
     )
 
     with smtplib.SMTP(smtp_host, smtp_port, timeout=10) as smtp:
-        smtp.starttls()
+        smtp.starttls(context=ssl.create_default_context())
         smtp.login(smtp_username, smtp_password)
         smtp.send_message(message)
