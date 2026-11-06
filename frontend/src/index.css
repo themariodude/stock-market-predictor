@@ -149,6 +149,73 @@ button {
   font-size: 0.9rem;
 }
 
+.stock-comparison {
+  margin: 1.5rem 0;
+  padding: 1.5rem;
+  border: 1px solid #2d3742;
+  border-radius: 12px;
+  background: #131c26;
+}
+
+.stock-comparison h2 {
+  margin-top: 0;
+}
+
+.stock-comparison-scroll {
+  overflow-x: auto;
+}
+
+.stock-comparison-scroll:focus-visible {
+  outline: 2px solid #63d391;
+  outline-offset: 2px;
+}
+
+.stock-comparison table {
+  width: 100%;
+  min-width: 900px;
+  border-collapse: collapse;
+  text-align: right;
+}
+
+.stock-comparison caption {
+  padding: 0.75rem 0;
+  color: #aeb9c5;
+  text-align: left;
+}
+
+.stock-comparison th,
+.stock-comparison td {
+  padding: 0.85rem;
+  border-bottom: 1px solid #2d3742;
+  white-space: nowrap;
+}
+
+.stock-comparison th:first-child {
+  text-align: left;
+}
+
+.stock-comparison thead th {
+  color: #aeb9c5;
+  font-size: 0.9rem;
+}
+
+.stock-comparison tbody th span,
+.stock-comparison tbody th small {
+  display: block;
+  margin-top: 0.25rem;
+  font-weight: 400;
+}
+
+.stock-comparison tbody th small {
+  color: #f2cb63;
+}
+
+.stock-comparison-note {
+  margin-bottom: 0;
+  color: #aeb9c5;
+  font-size: 0.9rem;
+}
+
 .stock-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
