@@ -95,3 +95,89 @@ communication paths and potential configuration risks,
 but deployed transport security has not yet been verified.
 
 No conclusion of full CC6.7 compliance is made.
+
+## AC02, AC03, and AC07: Local HTTP Baseline Tests
+
+### Test Environment
+
+- Environment: Local Docker development
+- Execution date: November 5, 2026
+- Time: Approximately 4:36 PM PST
+- Backend: FastAPI/Uvicorn on localhost:8000
+- Credentials used: None
+- Test tool: curl
+
+### Test 1: Backend Health Endpoint
+
+Request:
+GET http://localhost:8000/health
+
+Expected:
+Record whether the backend accepts HTTP requests.
+
+Actual:
+HTTP 200 OK.
+
+Result:
+The local backend accepts HTTP GET requests.
+
+### Test 2: Unauthenticated Account Endpoint
+
+Request:
+GET http://localhost:8000/auth/me
+
+Expected:
+Record authentication and HTTP handling behavior.
+
+Actual:
+HTTP 401 Unauthorized.
+WWW-Authenticate: Bearer.
+No HTTPS redirect observed.
+
+Result:
+The local endpoint requires authentication but does not
+redirect this request to HTTPS.
+
+### Test 3: Negative Authentication Test
+
+Request:
+POST http://localhost:8000/auth/login
+
+Content-Type: application/json
+Body: {}
+
+Expected:
+Determine whether an HTTP login request is redirected,
+rejected specifically for insecure transport, or processed
+by application validation.
+
+Actual:
+HTTP 422 Unprocessable Entity.
+No HTTPS redirect observed.
+
+Result:
+The local backend processes an HTTP login request through
+request validation. No credentials or tokens were submitted.
+
+### Assessment Interpretation
+
+These tests establish baseline behavior for the local
+development environment.
+
+They do not establish whether publicly accessible staging
+or production deployments enforce HTTPS.
+
+AC02 and AC03 remain unverified for public environments.
+
+AC07 has been partially assessed through a controlled,
+credential-free local negative test. The public-path
+acceptance criterion remains pending.
+
+### Remaining Verification
+
+- Test the actual staging HTTPS endpoint.
+- Determine whether staging HTTP requests redirect or fail.
+- Verify authentication requests in browser developer tools.
+- Inspect AWS security-group restrictions.
+- Validate TLS certificates and termination configuration.
+- Repeat relevant tests after any security remediation.
