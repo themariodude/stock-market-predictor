@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import SectorMovers from "../components/SectorMovers";
+import SectorSummary from "../components/SectorSummary";
 import { useEffect, useState } from "react";
 import {
   calculatePercentChange,
@@ -200,7 +201,11 @@ function Dashboard() {
 
       {!loading && !error && (
         <>
-          <p>Comparison period: {period}</p>
+          <SectorSummary
+            stocks={marketStocks}
+            supportedCount={marketStocks.length + unavailable}
+            period={period}
+          />
 
           {unavailable > 0 && (
             <p role="status">
