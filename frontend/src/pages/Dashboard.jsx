@@ -1,10 +1,12 @@
 import { Link } from "react-router-dom";
 import SectorMovers from "../components/SectorMovers";
+import SectorSummary from "../components/SectorSummary";
+import StockComparison from "../components/StockComparison";
 import { useEffect, useState } from "react";
 import {
-  calculatePercentChange,
   getSectorMovers,
 } from "../utils/stockCalculations";
+import { getComparisonMetrics } from "../utils/comparisonMetrics";
 
 
 const API_URL =
@@ -41,7 +43,8 @@ function Dashboard() {
   const [marketStocks, setMarketStocks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [period, setPeriod] = useState("");
+  const [comparisonStocks, setComparisonStocks] = useState([]);
+  const [comparisonDates, setComparisonDates] = useState({ previousDate: "", latestDate: "" });
   const [unavailable, setUnavailable] = useState(0);
 
 
@@ -127,31 +130,27 @@ function Dashboard() {
 
         const calculated = histories.flatMap(
           ({ company, records }) => {
-            const previous = records.find(
-              (record) => record.date === previousDate
-            );
-            const latest = records.find(
-              (record) => record.date === latestDate
-            );
-
-            const change = calculatePercentChange(
-              previous.close,
-              latest.close
-            );
-
-            if (change === null) return [];
+            const metrics = getComparisonMetrics(records, commonDates);
+            if (!metrics) return [];
 
             return [{
               ticker: company.ticker,
               company: company.company_name || company.ticker,
-              price: latest.close,
-              change,
+              ...metrics,
             }];
           }
         );
 
+        const calculatedByTicker = new Map(
+          calculated.map((stock) => [stock.ticker, stock])
+        );
         setMarketStocks(calculated);
-        setPeriod(`${previousDate} to ${latestDate}`);
+        setComparisonStocks(companies.map((company) => ({
+          ticker: company.ticker,
+          company: company.company_name || company.ticker,
+          metrics: calculatedByTicker.get(company.ticker) || null,
+        })));
+        setComparisonDates({ previousDate, latestDate });
         setUnavailable(companies.length - calculated.length);
       } catch (err) {
         if (controller.signal.aborted) return;
@@ -159,6 +158,7 @@ function Dashboard() {
         console.error("Stock loading failed:", err);
         setError("Unable to load sector market data.");
         setMarketStocks([]);
+        setComparisonStocks([]);
       } finally {
         if (!controller.signal.aborted) {
           setLoading(false);
@@ -200,13 +200,23 @@ function Dashboard() {
 
       {!loading && !error && (
         <>
-          <p>Comparison period: {period}</p>
+          <SectorSummary
+            stocks={marketStocks}
+            supportedCount={marketStocks.length + unavailable}
+            period={`${comparisonDates.previousDate} to ${comparisonDates.latestDate}`}
+          />
 
           {unavailable > 0 && (
             <p role="status">
               Data unavailable for {unavailable} stock(s).
             </p>
           )}
+
+          <StockComparison
+            stocks={comparisonStocks}
+            previousDate={comparisonDates.previousDate}
+            latestDate={comparisonDates.latestDate}
+          />
 
           <SectorMovers
             gainers={gainers}

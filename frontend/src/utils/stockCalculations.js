@@ -12,6 +12,23 @@ export function calculatePercentChange(previousClose, latestClose) {
   return ((latestClose - previousClose) / previousClose) * 100;
 }
 
+export function summarizeSector(stocks) {
+  const changes = stocks
+    .map((stock) => stock.change)
+    .filter(Number.isFinite);
+
+  if (changes.length === 0) {
+    return { averageChange: null, gainers: 0, decliners: 0 };
+  }
+
+  return {
+    averageChange:
+      changes.reduce((total, change) => total + change, 0) / changes.length,
+    gainers: changes.filter((change) => change > 0).length,
+    decliners: changes.filter((change) => change < 0).length,
+  };
+}
+
 
 export function getSectorMovers(stocks, limit = 3) {
   const validStocks = stocks.filter(
