@@ -22,6 +22,15 @@ WORKDIR /app
 # Deps before source: this layer survives code edits.
 COPY --chown=appuser:appuser backend/requirements.txt backend/requirements-dev.txt ./
 
+# PDF Native libraries and fonts for WeasyPrint
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        libpango-1.0-0 \
+        libpangoft2-1.0-0 \
+        libharfbuzz-subset0 \
+        fonts-dejavu-core \
+    && rm -rf /var/lib/apt/lists/*
+
 # Either/or — requirements-dev.txt already does `-r requirements.txt`.
 RUN python -m pip install --no-cache-dir --upgrade pip \
     && if [ "$INSTALL_DEV" = "true" ]; then \
