@@ -27,7 +27,11 @@ def refresh_market_data() -> None:
             history = get_historical_stock_data(ticker, "1Y")
             with SessionLocal() as session:
                 store_stock_prices(session, ticker, company_name, history["data"])
-            log.info("Refreshed market data for %s (%d rows).", ticker, history["count"])
+            log.info(
+                "Refreshed market data for %s (%d rows).",
+                ticker,
+                history["count"],
+            )
         except (HistoricalStockDataError, KeyError, TypeError, ValueError):
             log.exception("Market data refresh failed for %s.", ticker)
         except Exception:

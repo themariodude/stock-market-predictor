@@ -44,11 +44,15 @@ def test_refresh_market_data_fetches_and_stores_each_supported_stock(
 
     market_data_refresh.refresh_market_data()
 
-    assert fetched == [(ticker, "1Y") for ticker in market_data_refresh.SUPPORTED_STOCKS]
+    assert fetched == [
+        (ticker, "1Y") for ticker in market_data_refresh.SUPPORTED_STOCKS
+    ]
     with Session(refresh_session_factory.kw["bind"]) as session:
         stocks = session.scalars(select(Stock)).all()
         prices = session.scalars(select(StockPrice)).all()
-    assert {stock.ticker for stock in stocks} == set(market_data_refresh.SUPPORTED_STOCKS)
+    assert {stock.ticker for stock in stocks} == set(
+        market_data_refresh.SUPPORTED_STOCKS
+    )
     assert len(prices) == len(market_data_refresh.SUPPORTED_STOCKS)
 
 
@@ -88,7 +92,11 @@ def test_refresh_loop_runs_immediately_then_waits(monkeypatch):
         assert seconds == 60
         raise RuntimeError("stop test loop")
 
-    monkeypatch.setattr(market_data_refresh, "refresh_market_data", lambda: refreshed.append(1))
+    monkeypatch.setattr(
+        market_data_refresh,
+        "refresh_market_data",
+        lambda: refreshed.append(1),
+    )
     monkeypatch.setattr(asyncio, "sleep", stop_after_first_wait)
 
     with pytest.raises(RuntimeError, match="stop test loop"):

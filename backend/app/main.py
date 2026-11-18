@@ -7,9 +7,9 @@ and CI has something to assert against.
 Register additional routers at the bottom of this file.
 """
 
+import asyncio
 import logging
 import os
-import asyncio
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
