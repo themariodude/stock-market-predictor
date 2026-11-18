@@ -1,4 +1,3 @@
-
 """
 US-37 - Export Stock Analysis Report as PDF.
 
@@ -34,9 +33,7 @@ def generate_stock_report_pdf(
 
     template = template_env.get_template("stock_analysis.html")
 
-    generated_at = datetime.now(timezone.utc).strftime(
-        "%Y-%m-%d %H:%M UTC"
-    )
+    generated_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
 
     html_content = template.render(
         ticker=ticker,
