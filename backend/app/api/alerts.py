@@ -1,4 +1,3 @@
-
 from datetime import datetime
 from typing import Literal
 
@@ -14,7 +13,6 @@ from app.services.ticker_validation import (
     normalize_ticker,
 )
 
-
 router = APIRouter(
     prefix="/alerts",
     tags=["alerts"],
@@ -27,14 +25,13 @@ class AlertCreate(BaseModel):
 
     @field_validator("ticker")
     @classmethod
-    def validate_ticker(cls, value: str) -> str:
+    def validate_stock(cls, value: str) -> str:
         ticker = normalize_ticker(value)
 
         if not is_supported_ticker(ticker):
             raise ValueError("Unsupported stock ticker.")
 
         return ticker
-
 
 class AlertResponse(BaseModel):
     id: int
@@ -76,7 +73,7 @@ def list_alerts(
     db: Session = Depends(get_db),
     user_email: str = Depends(get_current_user_email),
 ):
-    alerts = db.scalars(
+    return db.scalars(
         select(Alert)
         .where(Alert.user_email == user_email)
         .order_by(
@@ -84,8 +81,6 @@ def list_alerts(
             Alert.id.desc(),
         )
     ).all()
-
-    return alerts
 
 @router.delete(
     "/{alert_id}",
@@ -105,7 +100,7 @@ def delete_alert(
 
     if alert is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=404,
             detail="Alert not found.",
         )
 
