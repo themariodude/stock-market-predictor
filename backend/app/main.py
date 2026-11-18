@@ -9,6 +9,7 @@ Register additional routers at the bottom of this file.
 
 import logging
 import os
+import asyncio
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -22,6 +23,10 @@ from app.api.models import router as models_router
 from app.api.sector import router as sector_router
 from app.api.stocks import router as stocks_router
 from app.services.deployment_config import validate_deployment_config
+from app.services.market_data_refresh import (
+    get_refresh_interval_seconds,
+    run_market_data_refresh,
+)
 
 logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO"),
@@ -33,7 +38,20 @@ log = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     validate_deployment_config()
-    yield
+    refresh_task = None
+    if _engine is not None:
+        interval = get_refresh_interval_seconds()
+        refresh_task = asyncio.create_task(run_market_data_refresh(interval))
+        log.info("Scheduled market data refresh every %d seconds.", interval)
+    try:
+        yield
+    finally:
+        if refresh_task is not None:
+            refresh_task.cancel()
+            try:
+                await refresh_task
+            except asyncio.CancelledError:
+                pass
 
 
 app = FastAPI(title="Stock Market Predictor API", version="0.1.1", lifespan=lifespan)
