@@ -7,6 +7,7 @@ import TimeRangeSelector from "../components/TimeRangeSelector";
 import FavoriteButton from "../components/FavoriteButton";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
+const token = localStorage.getItem("stock-market-auth-token");
 
 function formatPercent(value, includeSign = false) {
   if (typeof value !== "number" || !Number.isFinite(value)) {
@@ -167,7 +168,7 @@ function StockDetail() {
 
     <div className="stock-header">
       <h1>{ticker}</h1>
-      <FavoriteButton key={ticker} ticker={ticker} />
+      <FavoriteButton key={ticker} ticker={ticker} token={token}/>
     </div>
 
     <section className="prediction-direction">

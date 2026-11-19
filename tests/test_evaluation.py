@@ -1,7 +1,8 @@
 import pytest
 
 from src.models.evaluation import (
-    compare_model_to_baseline, evaluate_and_report ,
+    compare_model_to_baseline,
+    evaluate_and_report,
     format_comparison_report,
     mean_absolute_error,
     root_mean_squared_error,
@@ -44,7 +45,6 @@ def test_metrics_reject_empty_sequences():
     with pytest.raises(ValueError):
         root_mean_squared_error([], [])
 
-from src.models.evaluation import compare_model_to_baseline
 
 
 def test_compare_model_to_baseline():
