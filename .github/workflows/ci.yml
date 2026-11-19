@@ -39,6 +39,60 @@ jobs:
       - name: Scan complete Git history with redaction
         run: gitleaks detect --redact --log-opts=--all --no-banner
 
+      - name: SOC2 controlled synthetic secret - negative CI test
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "SOC2_TEST_START=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+          test_dir="$RUNNER_TEMP/soc2-gitleaks-test"
+          mkdir -p "$test_dir/repo"
+
+          printf '%s\n' \
+            'title = "SOC2 Synthetic Secret Test"' \
+            '[[rules]]' \
+            'id = "soc2-controlled-secret"' \
+            "regex = '''SOC2_DUMMY_SECRET_[A-Z0-9]{12}'''" \
+            > "$test_dir/config.toml"
+
+          git -C "$test_dir/repo" init -q
+          git -C "$test_dir/repo" config user.name "SOC2 Test"
+          git -C "$test_dir/repo" config user.email "soc2-test@example.invalid"
+
+          printf 'SOC2_DUMMY_SECRET_%s\n' 'AB12CD34EF56' \
+            > "$test_dir/repo/synthetic.txt"
+
+          git -C "$test_dir/repo" add synthetic.txt
+          git -C "$test_dir/repo" commit -qm "SOC2 synthetic test"
+
+          curl -fsSL --retry 3 \
+            'https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz' \
+            -o "$test_dir/gitleaks.tar.gz"
+
+          echo "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  $test_dir/gitleaks.tar.gz" | sha256sum -c -
+
+          tar -xzf "$test_dir/gitleaks.tar.gz" -C "$test_dir" gitleaks
+
+          set +e
+          "$test_dir/gitleaks" detect \
+            --source "$test_dir/repo" \
+            --config "$test_dir/config.toml" \
+            --redact --verbose --log-opts=--all --no-banner \
+            2>&1 | tee "$test_dir/result.log"
+
+          result=${PIPESTATUS[0]}
+          set -e
+
+          echo "SOC2_GITLEAKS_EXIT_CODE=$result"
+
+          if [ "$result" -eq 1 ] && grep -q 'soc2-controlled-secret' "$test_dir/result.log"; then
+            echo "SOC2_EXPECTED_DETECTION_CONFIRMED"
+            exit "$result"
+          fi
+
+          echo "SOC2_TEST_UNEXPECTED_RESULT" >&2
+          exit 2
+
   backend-checks:
     runs-on: ubuntu-latest
 
