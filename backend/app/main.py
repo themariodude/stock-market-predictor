@@ -16,9 +16,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import create_engine, text
 
 from app.api import favorites
-from app.api.market_alerts import router as market_alerts_router
 from app.api.auth import router as auth_router
 from app.api.benchmark import router as benchmark_router
+from app.api.market_alerts import router as market_alerts_router
 from app.api.models import router as models_router
 from app.api.notifications import router as notifications_router
 from app.api.sector import router as sector_router
