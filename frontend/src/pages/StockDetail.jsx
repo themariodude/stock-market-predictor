@@ -27,6 +27,8 @@ function formatCurrency(value) {
 function StockDetail() {
   const { ticker } = useParams();
   const [range, setRange] = useState("1Y");
+  const [isPdfExporting, setIsPdfExporting] = useState(false);
+  const [pdfExportError, setPdfExportError] = useState("");
   const [prediction, setPrediction] = useState(null);
   const [predictionError, setPredictionError] = useState("");
   const [isPredictionLoading, setIsPredictionLoading] = useState(true);
@@ -156,10 +158,55 @@ function StockDetail() {
   const predictionDirectionClass =
     prediction?.prediction_direction.toLowerCase() ?? "";
   const hasPredictionConfidence =
-    typeof prediction?.prediction_confidence === "number";
+    Number.isFinite(prediction?.prediction_confidence);
   const economicFactors = Array.isArray(prediction?.economic_factors)
     ? prediction.economic_factors
     : [];
+
+    // US-37: Download a stock analysis report as PDF.
+    async function handleExportPdf() {
+      setIsPdfExporting(true);
+      setPdfExportError("");
+
+      try {
+        const response = await fetch(
+          `${API_BASE_URL}/reports/stocks/${encodeURIComponent(ticker)}/pdf`
+        );
+
+        if (!response.ok) {
+          throw new Error("Unable to export PDF. Please try again.");
+        }
+
+        const contentType = response.headers.get("content-type") ?? "";
+
+        if (!contentType.includes("application/pdf")) {
+          throw new Error("The server did not return a valid PDF response.");
+        }
+
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `${ticker.toUpperCase()}_Analysis_${new Date()
+          .toISOString()
+          .slice(0, 10)}.pdf`;
+
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+
+        window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      } catch (error) {
+        console.error("PDF export failed:", error);
+
+        setPdfExportError(
+          "Unable to export PDF. Check your connection and try again."
+        );
+      } finally {
+        setIsPdfExporting(false);
+      }
+    }
 
   return (
     <main className="stock-detail-page">
@@ -168,7 +215,21 @@ function StockDetail() {
     <div className="stock-header">
       <h1>{ticker}</h1>
       <FavoriteButton key={ticker} ticker={ticker} />
+
+      <button
+        type="button"
+        className="export-pdf-button"
+        onClick={handleExportPdf}
+        disabled={isPdfExporting}
+      >
+        {isPdfExporting ? "Generating PDF..." : "Export PDF"}
+      </button>
     </div>
+      {pdfExportError && (
+        <p className="pdf-export-error" role="alert">
+          {pdfExportError}
+        </p>
+      )}
 
     <section className="prediction-direction">
         <div>
@@ -188,15 +249,16 @@ function StockDetail() {
           <div className="prediction-metrics">
             <div>
               <span>Predicted Price</span>
-              <strong>${prediction.predicted_price.toFixed(2)}</strong>
+              <strong>{formatCurrency(prediction.predicted_price)}</strong>
             </div>
+
             <div>
               <span>Predicted Change</span>
               <strong>
-                {prediction.predicted_change >= 0 ? "+" : ""}
-                {prediction.predicted_change.toFixed(2)} (
-                {prediction.predicted_percent_change >= 0 ? "+" : ""}
-                {prediction.predicted_percent_change.toFixed(2)}%)
+                {Number.isFinite(prediction.predicted_change) &&
+                Number.isFinite(prediction.predicted_percent_change)
+                  ? `${prediction.predicted_change > 0 ? "+" : ""}${prediction.predicted_change.toFixed(2)} (${prediction.predicted_percent_change > 0 ? "+" : ""}${prediction.predicted_percent_change.toFixed(2)}%)`
+                  : "Not available"}
               </strong>
             </div>
             {hasPredictionConfidence && (
@@ -215,7 +277,9 @@ function StockDetail() {
                   />
                 </div>
                 <small>
-                  {prediction.prediction_uncertainty.toFixed(1)}% uncertainty
+                  {Number.isFinite(prediction.prediction_uncertainty)
+                  ? `${prediction.prediction_uncertainty.toFixed(1)}% uncertainty`
+                  : "Uncertainty unavailable"}
                 </small>
               </div>
             )}
