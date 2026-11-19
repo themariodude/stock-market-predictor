@@ -1,4 +1,3 @@
-
 """Tests for US-39 and US-40 stock alerts."""
 
 import pytest
@@ -18,6 +17,7 @@ from app.models.alert import Alert
 # --------------------------------------------------
 # Test Database and Authentication Setup
 # --------------------------------------------------
+
 
 @pytest.fixture
 def client():
@@ -49,18 +49,14 @@ def client():
         return current_user["email"]
 
     app.dependency_overrides[get_db] = override_get_db
-    app.dependency_overrides[
-        get_current_user_email
-    ] = override_current_user
+    app.dependency_overrides[get_current_user_email] = override_current_user
 
     try:
         with TestClient(app) as test_client:
             yield test_client, current_user
     finally:
         app.dependency_overrides.pop(get_db, None)
-        app.dependency_overrides.pop(
-            get_current_user_email, None
-        )
+        app.dependency_overrides.pop(get_current_user_email, None)
         Base.metadata.drop_all(
             bind=engine,
             tables=[Alert.__table__],
@@ -71,6 +67,7 @@ def client():
 # --------------------------------------------------
 # US-39: Create Stock Alert
 # --------------------------------------------------
+
 
 def test_create_alert_success(client):
     api, _ = client
@@ -195,6 +192,7 @@ def test_missing_required_fields(client):
 # US-40: View and Manage Alerts
 # --------------------------------------------------
 
+
 def test_list_alerts_empty(client):
     api, _ = client
 
@@ -224,10 +222,7 @@ def test_list_multiple_alerts(client):
     assert response.status_code == 200
     assert len(response.json()) == 3
 
-    tickers = {
-        alert["ticker"]
-        for alert in response.json()
-    }
+    tickers = {alert["ticker"] for alert in response.json()}
 
     assert tickers == {"LMT", "RTX", "NOC"}
 
@@ -252,10 +247,7 @@ def test_alert_persistence(client):
 
     assert response.status_code == 200
 
-    assert any(
-        alert["id"] == alert_id
-        for alert in response.json()
-    )
+    assert any(alert["id"] == alert_id for alert in response.json())
 
 
 def test_delete_alert_success(client):
@@ -320,6 +312,7 @@ def test_delete_same_alert_twice(client):
 # Security: User Isolation
 # --------------------------------------------------
 
+
 def test_users_only_see_their_alerts(client):
     api, current_user = client
 
@@ -375,6 +368,7 @@ def test_user_cannot_delete_another_users_alert(client):
 # --------------------------------------------------
 # API Route Registration
 # --------------------------------------------------
+
 
 def test_alert_routes_registered():
     routes = {

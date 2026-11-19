@@ -18,6 +18,7 @@ router = APIRouter(
     tags=["alerts"],
 )
 
+
 class AlertCreate(BaseModel):
     ticker: str
     condition: Literal["above", "below"]
@@ -33,6 +34,7 @@ class AlertCreate(BaseModel):
 
         return ticker
 
+
 class AlertResponse(BaseModel):
     id: int
     ticker: str
@@ -41,6 +43,7 @@ class AlertResponse(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
 
 @router.post(
     "",
@@ -65,6 +68,7 @@ def create_alert(
 
     return alert
 
+
 @router.get(
     "",
     response_model=list[AlertResponse],
@@ -81,6 +85,7 @@ def list_alerts(
             Alert.id.desc(),
         )
     ).all()
+
 
 @router.delete(
     "/{alert_id}",
