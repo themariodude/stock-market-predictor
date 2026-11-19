@@ -202,6 +202,10 @@ function Dashboard() {
         </Link>
       </div>
 
+      <Link to="/alerts" className="back-button">
+        My Alerts
+      </Link>
+
       <p>Select a stock to view its historical performance.</p>
 
       {loading && <p>Loading market data...</p>}

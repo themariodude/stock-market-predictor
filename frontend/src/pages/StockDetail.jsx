@@ -25,8 +25,8 @@ function formatCurrency(value) {
 }
 
 function StockDetail() {
-  const { ticker } = useParams();
   const token = localStorage.getItem("stock-market-auth-token");
+  const { ticker } = useParams();
   const [range, setRange] = useState("1Y");
   const [prediction, setPrediction] = useState(null);
   const [predictionError, setPredictionError] = useState("");
@@ -168,7 +168,11 @@ function StockDetail() {
 
     <div className="stock-header">
       <h1>{ticker}</h1>
+
+      <div className="stock-header">
+      <h1>{ticker}</h1>
       <FavoriteButton key={ticker} ticker={ticker} token={token} />
+    </div>
     </div>
 
     <section className="prediction-direction">
