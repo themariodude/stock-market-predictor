@@ -17,7 +17,10 @@ spec.loader.exec_module(gate)
 
 @pytest.mark.parametrize(
     "statuses",
-    itertools.product(["success", "failure", "cancelled", "skipped"], repeat=3),
+    itertools.product(
+        ["success", "failure", "cancelled", "skipped"],
+        repeat=len(gate.REQUIRED_JOBS),
+    ),
 )
 def test_only_all_successful_jobs_pass(statuses):
     results = {
@@ -32,6 +35,14 @@ def test_missing_required_job_fails(missing_job):
     results = {
         job: {"result": "success"} for job in gate.REQUIRED_JOBS if job != missing_job
     }
+    assert not gate.ci_passed(results)
+
+
+@pytest.mark.parametrize("docker_result", ["failure", "cancelled", "skipped"])
+def test_unhealthy_docker_build_blocks_required_gate(docker_result):
+    results = {job: {"result": "success"} for job in gate.REQUIRED_JOBS}
+    results["docker-build"] = {"result": docker_result}
+
     assert not gate.ci_passed(results)
 
 
@@ -52,3 +63,12 @@ def test_cli_succeeds_for_all_required_checks(monkeypatch, capsys):
     monkeypatch.setenv("CI_JOB_RESULTS", json.dumps(results))
     assert gate.main() == 0
     assert "All required CI checks passed" in capsys.readouterr().out
+
+
+def test_cli_rejects_failed_docker_build(monkeypatch, capsys):
+    results = {job: {"result": "success"} for job in gate.REQUIRED_JOBS}
+    results["docker-build"]["result"] = "failure"
+    monkeypatch.setenv("CI_JOB_RESULTS", json.dumps(results))
+
+    assert gate.main() == 1
+    assert "CI gate failed" in capsys.readouterr().out

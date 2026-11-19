@@ -4,7 +4,7 @@ import json
 import os
 import sys
 
-REQUIRED_JOBS = ("secrets-scan", "backend-checks", "frontend-checks")
+REQUIRED_JOBS = ("secrets-scan", "backend-checks", "frontend-checks", "docker-build")
 
 
 def ci_passed(results: object) -> bool:
