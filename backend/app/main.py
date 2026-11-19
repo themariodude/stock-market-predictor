@@ -16,6 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import create_engine, text
 
 from app.api import favorites
+from app.api.alerts import router as alerts_router
 from app.api.auth import router as auth_router
 from app.api.benchmark import router as benchmark_router
 from app.api.models import router as models_router
@@ -85,3 +86,5 @@ app.include_router(favorites.router)
 app.include_router(sector_router)
 
 app.include_router(benchmark_router)
+
+app.include_router(alerts_router)
