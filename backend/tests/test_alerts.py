@@ -2,7 +2,6 @@
 """Tests for US-39 and US-40 stock alerts."""
 
 import pytest
-
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -15,7 +14,6 @@ from app.api.favorites import (
 from app.database import Base
 from app.main import app
 from app.models.alert import Alert
-
 
 # --------------------------------------------------
 # Test Database and Authentication Setup

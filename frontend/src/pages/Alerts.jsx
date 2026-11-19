@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import AlertForm from "../components/AlertForm";
 import {
@@ -10,7 +10,9 @@ import {
 
 export default function Alerts() {
   const [alerts, setAlerts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(
+    () => Boolean(getAlertToken())
+  );
   const [submitting, setSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const [error, setError] = useState("");
@@ -18,28 +20,41 @@ export default function Alerts() {
 
   const token = getAlertToken();
 
-  const loadAlerts = useCallback(async () => {
-    setLoading(true);
-    setError("");
-
-    try {
-      const data = await getAlerts();
-      setAlerts(data);
-    } catch (err) {
-      setError(err.message || "Failed to load alerts.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
+  // Load saved alerts when the page opens.
   useEffect(() => {
-    if (token) {
-      loadAlerts();
-    } else {
-      setLoading(false);
-    }
-  }, [token, loadAlerts]);
+    if (!token) return;
 
+    let cancelled = false;
+
+    async function fetchAlerts() {
+      try {
+        const data = await getAlerts();
+
+        if (!cancelled) {
+          setAlerts(data);
+          setError("");
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(
+            err.message || "Failed to load alerts."
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    fetchAlerts();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+
+  // US-39: Create a new stock alert.
   async function handleCreate(payload) {
     setSubmitting(true);
     setMessage("");
@@ -53,12 +68,20 @@ export default function Alerts() {
         ...previous,
       ]);
 
-      setMessage("Stock alert created successfully.");
+      setMessage(
+        "Stock alert created successfully."
+      );
+    } catch (err) {
+      setError(
+        err.message || "Failed to create alert."
+      );
+      throw err;
     } finally {
       setSubmitting(false);
     }
   }
 
+  // US-40: Delete an existing stock alert.
   async function handleDelete(alertId) {
     setDeletingId(alertId);
     setError("");
@@ -68,22 +91,31 @@ export default function Alerts() {
       await deleteAlert(alertId);
 
       setAlerts((previous) =>
-        previous.filter((alert) => alert.id !== alertId)
+        previous.filter(
+          (alert) => alert.id !== alertId
+        )
       );
 
-      setMessage("Stock alert deleted successfully.");
+      setMessage(
+        "Stock alert deleted successfully."
+      );
     } catch (err) {
-      setError(err.message || "Failed to delete alert.");
+      setError(
+        err.message || "Failed to delete alert."
+      );
     } finally {
       setDeletingId(null);
     }
   }
 
+  // Require authentication.
   if (!token) {
     return (
       <main className="alerts-page">
         <h1>Stock Alerts</h1>
-        <p>Please log in to create and manage alerts.</p>
+        <p>
+          Please log in to create and manage alerts.
+        </p>
       </main>
     );
   }
@@ -93,18 +125,27 @@ export default function Alerts() {
       <h1>Stock Alerts</h1>
 
       <p>
-        Create and manage stock-price alert conditions
-        for your favorite defense-sector companies.
+        Create and manage stock-price alert
+        conditions for your favorite
+        defense-sector companies.
       </p>
 
+      {/* US-39: Create Alert Form */}
       <AlertForm
         onCreate={handleCreate}
         submitting={submitting}
       />
 
-      {message && <p role="status">{message}</p>}
-      {error && <p role="alert">{error}</p>}
+      {/* Success and Error Messages */}
+      {message && (
+        <p role="status">{message}</p>
+      )}
 
+      {error && (
+        <p role="alert">{error}</p>
+      )}
+
+      {/* US-40: Manage Saved Alerts */}
       <section className="alerts-list">
         <h2>My Alerts</h2>
 
@@ -115,7 +156,10 @@ export default function Alerts() {
         ) : (
           <ul className="alerts-grid">
             {alerts.map((alert) => (
-                <li className="alert-card" key={alert.id}>
+              <li
+                className="alert-card"
+                key={alert.id}
+              >
                 <div>
                   <strong>{alert.ticker}</strong>
 
@@ -124,7 +168,10 @@ export default function Alerts() {
                     {alert.condition === "above"
                       ? "above"
                       : "below"}{" "}
-                    ${Number(alert.threshold).toFixed(2)}
+                    $
+                    {Number(
+                      alert.threshold
+                    ).toFixed(2)}
                   </p>
 
                   <small>
@@ -138,10 +185,16 @@ export default function Alerts() {
                 <button
                   className="alert-delete-button"
                   type="button"
-                  disabled={deletingId === alert.id}
-                  onClick={() => handleDelete(alert.id)}
+                  disabled={
+                    deletingId === alert.id
+                  }
+                  onClick={() =>
+                    handleDelete(alert.id)
+                  }
                 >
-                  {deletingId === alert.id ? "Deleting..." : "Delete"}
+                  {deletingId === alert.id
+                    ? "Deleting..."
+                    : "Delete"}
                 </button>
               </li>
             ))}
