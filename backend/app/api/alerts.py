@@ -25,6 +25,18 @@ class AlertCreate(BaseModel):
     direction: AlertDirection
 
 
+class AlertUpdate(BaseModel):
+    """Optional fields for updating an existing alert."""
+
+    threshold_percent: Decimal | None = Field(
+        default=None,
+        gt=0,
+        le=100,
+    )
+    direction: AlertDirection | None = None
+    is_active: bool | None = None
+
+
 class AlertResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -94,3 +106,70 @@ def list_alerts(
             .order_by(MarketAlert.created_at.desc())
         ).all()
     )
+
+
+@router.patch("/{alert_id}", response_model=AlertResponse)
+def update_alert(
+    alert_id: int,
+    payload: AlertUpdate,
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id),
+) -> MarketAlert:
+    """Update an alert owned by the authenticated investor."""
+
+    alert = db.scalar(
+        select(MarketAlert).where(
+            MarketAlert.id == alert_id,
+            MarketAlert.user_id == user_id,
+        )
+    )
+
+    if alert is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Alert not found.",
+        )
+
+    changes = payload.model_dump(exclude_unset=True)
+
+    if not changes or any(value is None for value in changes.values()):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Provide at least one non-null field to update.",
+        )
+
+    for field, value in changes.items():
+        setattr(alert, field, value)
+
+    db.commit()
+    db.refresh(alert)
+
+    return alert
+
+
+@router.delete(
+    "/{alert_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_alert(
+    alert_id: int,
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id),
+) -> None:
+    """Delete an alert owned by the authenticated investor."""
+
+    alert = db.scalar(
+        select(MarketAlert).where(
+            MarketAlert.id == alert_id,
+            MarketAlert.user_id == user_id,
+        )
+    )
+
+    if alert is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Alert not found.",
+        )
+
+    db.delete(alert)
+    db.commit()

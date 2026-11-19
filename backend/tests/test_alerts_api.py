@@ -220,3 +220,208 @@ def test_rejects_empty_ticker(alert_client):
     )
 
     assert response.status_code == 422
+
+
+def test_update_alert_threshold_and_direction(alert_client):
+    client, headers = alert_client
+
+    created = client.post(
+        "/alerts",
+        headers=headers["a"],
+        json={
+            "ticker": "LMT",
+            "threshold_percent": 5,
+            "direction": "increase",
+        },
+    )
+    assert created.status_code == 201
+    alert_id = created.json()["id"]
+
+    response = client.patch(
+        f"/alerts/{alert_id}",
+        headers=headers["a"],
+        json={
+            "threshold_percent": 7,
+            "direction": "decrease",
+        },
+    )
+
+    assert response.status_code == 200
+    assert Decimal(str(response.json()["threshold_percent"])) == Decimal("7")
+    assert response.json()["direction"] == "decrease"
+
+    saved = client.get("/alerts", headers=headers["a"])
+    assert saved.status_code == 200
+    assert saved.json()[0]["direction"] == "decrease"
+
+
+def test_disable_and_reenable_alert(alert_client):
+    client, headers = alert_client
+
+    created = client.post(
+        "/alerts",
+        headers=headers["a"],
+        json={
+            "ticker": "NOC",
+            "threshold_percent": 3,
+            "direction": "either",
+        },
+    )
+    assert created.status_code == 201
+    alert_id = created.json()["id"]
+
+    disabled = client.patch(
+        f"/alerts/{alert_id}",
+        headers=headers["a"],
+        json={"is_active": False},
+    )
+
+    assert disabled.status_code == 200
+    assert disabled.json()["is_active"] is False
+
+    enabled = client.patch(
+        f"/alerts/{alert_id}",
+        headers=headers["a"],
+        json={"is_active": True},
+    )
+
+    assert enabled.status_code == 200
+    assert enabled.json()["is_active"] is True
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {},
+        {"threshold_percent": None},
+        {"is_active": None},
+    ],
+)
+def test_rejects_empty_or_null_updates(alert_client, payload):
+    client, headers = alert_client
+
+    created = client.post(
+        "/alerts",
+        headers=headers["a"],
+        json={
+            "ticker": "LMT",
+            "threshold_percent": 5,
+            "direction": "increase",
+        },
+    )
+    assert created.status_code == 201
+
+    response = client.patch(
+        f"/alerts/{created.json()['id']}",
+        headers=headers["a"],
+        json=payload,
+    )
+
+    assert response.status_code == 422
+
+
+@pytest.mark.parametrize("threshold", [0, 101])
+def test_rejects_invalid_updated_threshold(alert_client, threshold):
+    client, headers = alert_client
+
+    created = client.post(
+        "/alerts",
+        headers=headers["a"],
+        json={
+            "ticker": "RTX",
+            "threshold_percent": 5,
+            "direction": "increase",
+        },
+    )
+    assert created.status_code == 201
+
+    response = client.patch(
+        f"/alerts/{created.json()['id']}",
+        headers=headers["a"],
+        json={"threshold_percent": threshold},
+    )
+
+    assert response.status_code == 422
+
+
+def test_investor_cannot_modify_or_delete_another_users_alert(alert_client):
+    client, headers = alert_client
+
+    created = client.post(
+        "/alerts",
+        headers=headers["a"],
+        json={
+            "ticker": "LMT",
+            "threshold_percent": 5,
+            "direction": "increase",
+        },
+    )
+    assert created.status_code == 201
+    alert_id = created.json()["id"]
+
+    update = client.patch(
+        f"/alerts/{alert_id}",
+        headers=headers["b"],
+        json={"is_active": False},
+    )
+
+    delete = client.delete(
+        f"/alerts/{alert_id}",
+        headers=headers["b"],
+    )
+
+    assert update.status_code == 404
+    assert delete.status_code == 404
+
+    owner_alerts = client.get("/alerts", headers=headers["a"])
+
+    assert owner_alerts.status_code == 200
+    assert len(owner_alerts.json()) == 1
+    assert owner_alerts.json()[0]["is_active"] is True
+
+
+def test_delete_own_alert(alert_client):
+    client, headers = alert_client
+
+    created = client.post(
+        "/alerts",
+        headers=headers["a"],
+        json={
+            "ticker": "NOC",
+            "threshold_percent": 4,
+            "direction": "decrease",
+        },
+    )
+    assert created.status_code == 201
+    alert_id = created.json()["id"]
+
+    response = client.delete(
+        f"/alerts/{alert_id}",
+        headers=headers["a"],
+    )
+
+    assert response.status_code == 204
+
+    remaining = client.get("/alerts", headers=headers["a"])
+    assert remaining.status_code == 200
+    assert remaining.json() == []
+
+    repeated = client.delete(
+        f"/alerts/{alert_id}",
+        headers=headers["a"],
+    )
+    assert repeated.status_code == 404
+
+
+def test_update_and_delete_require_authentication(alert_client):
+    client, _ = alert_client
+
+    update = client.patch(
+        "/alerts/1",
+        json={"is_active": False},
+    )
+
+    delete = client.delete("/alerts/1")
+
+    assert update.status_code == 401
+    assert delete.status_code == 401
