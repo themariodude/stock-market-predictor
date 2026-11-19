@@ -7,6 +7,8 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Account from "./pages/Account";
 import Watchlist from "./pages/Watchlist";
+import MarketAlerts from "./pages/MarketAlerts";
+import Notifications from "./pages/Notifications";
 
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
@@ -32,6 +34,8 @@ function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         {/* Shows the data for an individual stock */}
         <Route path="/stocks/:ticker" element={<StockDetail />} />
+        <Route path="/alerts" element={<MarketAlerts />} />
+        <Route path="/notifications" element={<Notifications />} />
       </Routes>
     </BrowserRouter>
   );

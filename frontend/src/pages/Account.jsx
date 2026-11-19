@@ -77,20 +77,63 @@ function Account() {
   }
 
   return (
-    <main className="account-page">
+
+        <main className="account-page">
       <div className="page-header">
         <div>
           <Link to="/dashboard" className="back-button">
             Back to Dashboard
           </Link>
+
           <h1>Saved Information</h1>
-          <Link to="/watchlist" className="back-button">My Watchlist</Link>
+
+          <div
+            className="account-shortcuts"
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "16px",
+              marginTop: "24px",
+              marginBottom: "32px",
+            }}
+          >
+            <Link
+              to="/watchlist"
+              className="back-button"
+              style={{ margin: 0 }}
+            >
+              My Watchlist
+            </Link>
+
+            <Link
+              to="/alerts"
+              className="back-button"
+              style={{ margin: 0 }}
+            >
+              Market Alerts
+            </Link>
+
+            <Link
+              to="/notifications"
+              className="back-button"
+              style={{ margin: 0 }}
+            >
+              Notifications
+            </Link>
+          </div>
         </div>
 
-        <button className="secondary-button" onClick={handleLogout} type="button">
+        <button
+          className="secondary-button"
+          onClick={handleLogout}
+          type="button"
+        >
           Log Out
         </button>
       </div>
+
+  {/* Keep the existing account information content here */}
+
 
       {isLoading && <p>Loading saved information...</p>}
       {!isLoading && error && <p className="form-error">{error}</p>}
