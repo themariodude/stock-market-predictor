@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { downloadStockPdf } from "../utils/pdfExport.js";
 
 import PredictionFactors from "../components/PredictionFactors";
 import StockChart from "../components/StockChart";
@@ -163,51 +164,24 @@ function StockDetail() {
     ? prediction.economic_factors
     : [];
 
-    // US-37: Download a stock analysis report as PDF.
-    async function handleExportPdf() {
-      setIsPdfExporting(true);
-      setPdfExportError("");
+  async function handleExportPdf() {
+    if (isPdfExporting) return;
 
-      try {
-        const response = await fetch(
-          `${API_BASE_URL}/reports/stocks/${encodeURIComponent(ticker)}/pdf`
-        );
+    setIsPdfExporting(true);
+    setPdfExportError("");
 
-        if (!response.ok) {
-          throw new Error("Unable to export PDF. Please try again.");
-        }
+    try {
+      await downloadStockPdf(ticker, API_BASE_URL);
+    } catch (error) {
+      console.error("PDF export failed:", error);
 
-        const contentType = response.headers.get("content-type") ?? "";
-
-        if (!contentType.includes("application/pdf")) {
-          throw new Error("The server did not return a valid PDF response.");
-        }
-
-        const blob = await response.blob();
-        const url = URL.createObjectURL(blob);
-
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = `${ticker.toUpperCase()}_Analysis_${new Date()
-          .toISOString()
-          .slice(0, 10)}.pdf`;
-
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-
-        window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-      } catch (error) {
-        console.error("PDF export failed:", error);
-
-        setPdfExportError(
-          "Unable to export PDF. Check your connection and try again."
-        );
-      } finally {
-        setIsPdfExporting(false);
-      }
+      setPdfExportError(
+        "Unable to export PDF. Check your connection and try again."
+      );
+    } finally {
+      setIsPdfExporting(false);
     }
-
+  }
   return (
     <main className="stock-detail-page">
     <Link to="/dashboard">Back to Dashboard</Link>
