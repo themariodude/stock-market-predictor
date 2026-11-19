@@ -17,6 +17,7 @@ from app.services.market_alert_monitor import (
     threshold_reached,
     valid_price,
 )
+from app.services.market_alert_runner import run_verified_market_scan
 
 TRADING_DATE = date(2026, 11, 18)
 
@@ -310,3 +311,83 @@ def test_multiple_investors_receive_separate_notifications(monitor_db):
 @pytest.mark.parametrize("value", [None, 0, -1, "nan", "inf", "bad"])
 def test_valid_price_rejects_unusable_values(value):
     assert valid_price(value) is None
+
+
+def test_verified_scan_creates_notification(monitor_db):
+    db, user_a, _ = monitor_db
+    add_alert(db, user_a, ticker="LMT", threshold="5")
+
+    def history_loader(ticker, period):
+        assert ticker == "LMT"
+        assert period == "1M"
+        return {
+            "data": [
+                {"date": "2026-11-17", "close": 100},
+                {"date": "2026-11-18", "close": 106},
+            ]
+        }
+
+    count = run_verified_market_scan(
+        db,
+        TRADING_DATE,
+        history_loader=history_loader,
+    )
+
+    assert count == 1
+
+    notifications = saved_notifications(db)
+    assert len(notifications) == 1
+    assert notifications[0].observed_price == Decimal("106")
+    assert notifications[0].reference_price == Decimal("100")
+    assert notifications[0].observed_change_percent == Decimal("6")
+
+
+def test_verified_scan_rejects_stale_session(monitor_db):
+    db, user_a, _ = monitor_db
+    add_alert(db, user_a, ticker="LMT", threshold="5")
+
+    def stale_history(ticker, period):
+        return {
+            "data": [
+                {"date": "2026-11-16", "close": 100},
+                {"date": "2026-11-17", "close": 110},
+            ]
+        }
+
+    count = run_verified_market_scan(
+        db,
+        TRADING_DATE,
+        history_loader=stale_history,
+    )
+
+    assert count == 0
+    assert saved_notifications(db) == []
+
+
+def test_verified_scan_prevents_duplicate_notifications(monitor_db):
+    db, user_a, _ = monitor_db
+    add_alert(db, user_a, ticker="LMT", threshold="5")
+
+    def history_loader(ticker, period):
+        return {
+            "data": [
+                {"date": "2026-11-17", "close": 100},
+                {"date": "2026-11-18", "close": 108},
+            ]
+        }
+
+    first = run_verified_market_scan(
+        db,
+        TRADING_DATE,
+        history_loader=history_loader,
+    )
+
+    second = run_verified_market_scan(
+        db,
+        TRADING_DATE,
+        history_loader=history_loader,
+    )
+
+    assert first == 1
+    assert second == 0
+    assert len(saved_notifications(db)) == 1
