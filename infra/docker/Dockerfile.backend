@@ -25,8 +25,9 @@ WORKDIR /app
 COPY --chown=appuser:appuser backend/requirements.txt backend/requirements-dev.txt ./
 
 # Install application dependencies.
-# Upgrade setuptools only if already installed.
+# Upgrade setuptools to a patched version before installation.
 RUN python -m pip install --no-cache-dir --upgrade pip \
+    && python -m pip install --no-cache-dir "setuptools>=78.1.1" \
     && if [ "$INSTALL_DEV" = "true" ]; then \
          python -m pip install --no-cache-dir -r requirements-dev.txt; \
        else \
