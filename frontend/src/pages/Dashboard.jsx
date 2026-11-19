@@ -193,7 +193,7 @@ function Dashboard() {
           My Watchlist
         </Link>
 
-        <Link to="/alerts" className="back-button">
+        <Link to="/market-alerts" className="back-button">
           Market Alerts
         </Link>
 

@@ -34,7 +34,7 @@ function MarketAlerts() {
     localStorage.removeItem(USER_KEY);
     navigate("/login", {
       replace: true,
-      state: { from: "/alerts" },
+      state: { from: "/market-alerts" },
     });
   }
 
@@ -64,7 +64,7 @@ function MarketAlerts() {
     if (!token) {
       navigate("/login", {
         replace: true,
-        state: { from: "/alerts" },
+        state: { from: "/market-alerts" },
       });
       return;
     }
@@ -91,7 +91,7 @@ function MarketAlerts() {
           localStorage.removeItem(USER_KEY);
           navigate("/login", {
             replace: true,
-            state: { from: "/alerts" },
+            state: { from: "/market-alerts" },
           });
           return;
         }

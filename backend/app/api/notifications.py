@@ -8,7 +8,7 @@ from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.alerts import get_current_user_id
+from app.api.market_alerts import get_current_user_id
 from app.api.favorites import get_db
 from app.models.notification_event import NotificationEvent
 

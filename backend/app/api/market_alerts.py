@@ -14,7 +14,7 @@ from app.models.market_alert import MarketAlert
 from app.models.user import User
 from app.services.ticker_validation import validate_ticker
 
-router = APIRouter(prefix="/alerts", tags=["alerts"])
+router = APIRouter(prefix="/market-alerts", tags=["alerts"])
 
 AlertDirection = Literal["increase", "decrease", "either"]
 

@@ -34,7 +34,7 @@ function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         {/* Shows the data for an individual stock */}
         <Route path="/stocks/:ticker" element={<StockDetail />} />
-        <Route path="/alerts" element={<MarketAlerts />} />
+        <Route path="/market-alerts" element={<MarketAlerts />} />
         <Route path="/notifications" element={<Notifications />} />
       </Routes>
     </BrowserRouter>

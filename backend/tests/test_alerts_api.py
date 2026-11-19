@@ -74,7 +74,7 @@ def test_create_market_alert(alert_client):
     client, headers = alert_client
 
     response = client.post(
-        "/alerts",
+        "/market-alerts",
         headers=headers["a"],
         json={
             "ticker": "LMT",
@@ -99,7 +99,7 @@ def test_alert_persists_across_requests(alert_client):
     client, headers = alert_client
 
     created = client.post(
-        "/alerts",
+        "/market-alerts",
         headers=headers["a"],
         json={
             "ticker": "NOC",
@@ -110,7 +110,7 @@ def test_alert_persists_across_requests(alert_client):
 
     assert created.status_code == 201
 
-    response = client.get("/alerts", headers=headers["a"])
+    response = client.get("/market-alerts", headers=headers["a"])
 
     assert response.status_code == 200
     assert len(response.json()) == 1
@@ -122,7 +122,7 @@ def test_investors_only_see_their_own_alerts(alert_client):
     client, headers = alert_client
 
     first = client.post(
-        "/alerts",
+        "/market-alerts",
         headers=headers["a"],
         json={
             "ticker": "LMT",
@@ -132,7 +132,7 @@ def test_investors_only_see_their_own_alerts(alert_client):
     )
 
     second = client.post(
-        "/alerts",
+        "/market-alerts",
         headers=headers["b"],
         json={
             "ticker": "RTX",
@@ -144,9 +144,9 @@ def test_investors_only_see_their_own_alerts(alert_client):
     assert first.status_code == 201
     assert second.status_code == 201
 
-    alerts_a = client.get("/alerts", headers=headers["a"]).json()
+    alerts_a = client.get("/market-alerts", headers=headers["a"]).json()
 
-    alerts_b = client.get("/alerts", headers=headers["b"]).json()
+    alerts_b = client.get("/market-alerts", headers=headers["b"]).json()
 
     assert len(alerts_a) == 1
     assert len(alerts_b) == 1
@@ -158,10 +158,10 @@ def test_investors_only_see_their_own_alerts(alert_client):
 def test_alerts_require_authentication(alert_client):
     client, _ = alert_client
 
-    get_response = client.get("/alerts")
+    get_response = client.get("/market-alerts")
 
     post_response = client.post(
-        "/alerts",
+        "/market-alerts",
         json={
             "ticker": "LMT",
             "threshold_percent": 5,
@@ -178,7 +178,7 @@ def test_rejects_invalid_thresholds(alert_client, threshold):
     client, headers = alert_client
 
     response = client.post(
-        "/alerts",
+        "/market-alerts",
         headers=headers["a"],
         json={
             "ticker": "LMT",
@@ -194,7 +194,7 @@ def test_rejects_invalid_direction(alert_client):
     client, headers = alert_client
 
     response = client.post(
-        "/alerts",
+        "/market-alerts",
         headers=headers["a"],
         json={
             "ticker": "LMT",
@@ -210,7 +210,7 @@ def test_rejects_empty_ticker(alert_client):
     client, headers = alert_client
 
     response = client.post(
-        "/alerts",
+        "/market-alerts",
         headers=headers["a"],
         json={
             "ticker": "",
@@ -226,7 +226,7 @@ def test_update_alert_threshold_and_direction(alert_client):
     client, headers = alert_client
 
     created = client.post(
-        "/alerts",
+        "/market-alerts",
         headers=headers["a"],
         json={
             "ticker": "LMT",
@@ -238,7 +238,7 @@ def test_update_alert_threshold_and_direction(alert_client):
     alert_id = created.json()["id"]
 
     response = client.patch(
-        f"/alerts/{alert_id}",
+        f"/market-alerts/{alert_id}",
         headers=headers["a"],
         json={
             "threshold_percent": 7,
@@ -250,7 +250,7 @@ def test_update_alert_threshold_and_direction(alert_client):
     assert Decimal(str(response.json()["threshold_percent"])) == Decimal("7")
     assert response.json()["direction"] == "decrease"
 
-    saved = client.get("/alerts", headers=headers["a"])
+    saved = client.get("/market-alerts", headers=headers["a"])
     assert saved.status_code == 200
     assert saved.json()[0]["direction"] == "decrease"
 
@@ -259,7 +259,7 @@ def test_disable_and_reenable_alert(alert_client):
     client, headers = alert_client
 
     created = client.post(
-        "/alerts",
+        "/market-alerts",
         headers=headers["a"],
         json={
             "ticker": "NOC",
@@ -271,7 +271,7 @@ def test_disable_and_reenable_alert(alert_client):
     alert_id = created.json()["id"]
 
     disabled = client.patch(
-        f"/alerts/{alert_id}",
+        f"/market-alerts/{alert_id}",
         headers=headers["a"],
         json={"is_active": False},
     )
@@ -280,7 +280,7 @@ def test_disable_and_reenable_alert(alert_client):
     assert disabled.json()["is_active"] is False
 
     enabled = client.patch(
-        f"/alerts/{alert_id}",
+        f"/market-alerts/{alert_id}",
         headers=headers["a"],
         json={"is_active": True},
     )
@@ -301,7 +301,7 @@ def test_rejects_empty_or_null_updates(alert_client, payload):
     client, headers = alert_client
 
     created = client.post(
-        "/alerts",
+        "/market-alerts",
         headers=headers["a"],
         json={
             "ticker": "LMT",
@@ -312,7 +312,7 @@ def test_rejects_empty_or_null_updates(alert_client, payload):
     assert created.status_code == 201
 
     response = client.patch(
-        f"/alerts/{created.json()['id']}",
+        f"/market-alerts/{created.json()['id']}",
         headers=headers["a"],
         json=payload,
     )
@@ -325,7 +325,7 @@ def test_rejects_invalid_updated_threshold(alert_client, threshold):
     client, headers = alert_client
 
     created = client.post(
-        "/alerts",
+        "/market-alerts",
         headers=headers["a"],
         json={
             "ticker": "RTX",
@@ -336,7 +336,7 @@ def test_rejects_invalid_updated_threshold(alert_client, threshold):
     assert created.status_code == 201
 
     response = client.patch(
-        f"/alerts/{created.json()['id']}",
+        f"/market-alerts/{created.json()['id']}",
         headers=headers["a"],
         json={"threshold_percent": threshold},
     )
@@ -348,7 +348,7 @@ def test_investor_cannot_modify_or_delete_another_users_alert(alert_client):
     client, headers = alert_client
 
     created = client.post(
-        "/alerts",
+        "/market-alerts",
         headers=headers["a"],
         json={
             "ticker": "LMT",
@@ -360,20 +360,20 @@ def test_investor_cannot_modify_or_delete_another_users_alert(alert_client):
     alert_id = created.json()["id"]
 
     update = client.patch(
-        f"/alerts/{alert_id}",
+        f"/market-alerts/{alert_id}",
         headers=headers["b"],
         json={"is_active": False},
     )
 
     delete = client.delete(
-        f"/alerts/{alert_id}",
+        f"/market-alerts/{alert_id}",
         headers=headers["b"],
     )
 
     assert update.status_code == 404
     assert delete.status_code == 404
 
-    owner_alerts = client.get("/alerts", headers=headers["a"])
+    owner_alerts = client.get("/market-alerts", headers=headers["a"])
 
     assert owner_alerts.status_code == 200
     assert len(owner_alerts.json()) == 1
@@ -384,7 +384,7 @@ def test_delete_own_alert(alert_client):
     client, headers = alert_client
 
     created = client.post(
-        "/alerts",
+        "/market-alerts",
         headers=headers["a"],
         json={
             "ticker": "NOC",
@@ -396,18 +396,18 @@ def test_delete_own_alert(alert_client):
     alert_id = created.json()["id"]
 
     response = client.delete(
-        f"/alerts/{alert_id}",
+        f"/market-alerts/{alert_id}",
         headers=headers["a"],
     )
 
     assert response.status_code == 204
 
-    remaining = client.get("/alerts", headers=headers["a"])
+    remaining = client.get("/market-alerts", headers=headers["a"])
     assert remaining.status_code == 200
     assert remaining.json() == []
 
     repeated = client.delete(
-        f"/alerts/{alert_id}",
+        f"/market-alerts/{alert_id}",
         headers=headers["a"],
     )
     assert repeated.status_code == 404
@@ -417,11 +417,11 @@ def test_update_and_delete_require_authentication(alert_client):
     client, _ = alert_client
 
     update = client.patch(
-        "/alerts/1",
+        "/market-alerts/1",
         json={"is_active": False},
     )
 
-    delete = client.delete("/alerts/1")
+    delete = client.delete("/market-alerts/1")
 
     assert update.status_code == 401
     assert delete.status_code == 401

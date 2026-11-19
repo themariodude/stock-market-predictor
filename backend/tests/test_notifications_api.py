@@ -234,7 +234,7 @@ def test_deleting_alert_preserves_notification_history(
     client, headers, ids = notification_client
 
     deleted = client.delete(
-        f"/alerts/{ids['alert_a']}",
+        f"/market-alerts/{ids['alert_a']}",
         headers=headers["a"],
     )
 

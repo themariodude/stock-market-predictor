@@ -138,7 +138,7 @@ function Notifications() {
           Back to Dashboard
         </Link>
 
-        <Link to="/alerts" className="back-button">
+        <Link to="/market-alerts" className="back-button">
           My Market Alerts
         </Link>
       </nav>
@@ -202,7 +202,7 @@ function Notifications() {
                 When a configured market-change threshold
                 is reached, notifications will appear here.
               </p>
-              <Link to="/alerts" className="primary-button">
+              <Link to="/market-alerts" className="primary-button">
                 Configure Market Alerts
               </Link>
             </div>

@@ -73,7 +73,7 @@ def test_alert_to_notification_to_read():
         with TestClient(app) as client:
             # Step 1: Investor A creates an alert.
             created = client.post(
-                "/alerts",
+                "/market-alerts",
                 headers=headers_a,
                 json={
                     "ticker": "LMT",

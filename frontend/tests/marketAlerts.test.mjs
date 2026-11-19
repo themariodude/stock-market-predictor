@@ -36,7 +36,7 @@ test("GET alerts sends the investor bearer token", async () => {
   });
 
   assert.equal(mock.calls[0].options.method, "GET");
-  assert.ok(mock.calls[0].url.endsWith("/alerts"));
+  assert.ok(mock.calls[0].url.endsWith("/market-alerts"));
   assert.equal(
     mock.calls[0].options.headers.Authorization,
     "Bearer test-token",
@@ -82,7 +82,7 @@ test("PATCH updates an existing alert", async () => {
     { token: "test-token", fetchImpl: mock.fetchImpl },
   );
 
-  assert.ok(mock.calls[0].url.endsWith("/alerts/7"));
+  assert.ok(mock.calls[0].url.endsWith("/market-alerts/7"));
   assert.equal(mock.calls[0].options.method, "PATCH");
   assert.equal(result.is_active, false);
 });
@@ -95,7 +95,7 @@ test("DELETE handles HTTP 204", async () => {
     fetchImpl: mock.fetchImpl,
   });
 
-  assert.ok(mock.calls[0].url.endsWith("/alerts/7"));
+  assert.ok(mock.calls[0].url.endsWith("/market-alerts/7"));
   assert.equal(mock.calls[0].options.method, "DELETE");
   assert.equal(result, null);
 });

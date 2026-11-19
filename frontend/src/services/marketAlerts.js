@@ -63,11 +63,11 @@ async function apiRequest(
 }
 
 export function getMarketAlerts(options) {
-  return apiRequest("/alerts", options);
+  return apiRequest("/market-alerts", options);
 }
 
 export function createMarketAlert(payload, options = {}) {
-  return apiRequest("/alerts", {
+  return apiRequest("/market-alerts", {
     ...options,
     method: "POST",
     body: payload,
@@ -75,7 +75,7 @@ export function createMarketAlert(payload, options = {}) {
 }
 
 export function updateMarketAlert(alertId, payload, options = {}) {
-  return apiRequest(`/alerts/${encodeURIComponent(alertId)}`, {
+  return apiRequest(`/market-alerts/${encodeURIComponent(alertId)}`, {
     ...options,
     method: "PATCH",
     body: payload,
@@ -83,7 +83,7 @@ export function updateMarketAlert(alertId, payload, options = {}) {
 }
 
 export function deleteMarketAlert(alertId, options = {}) {
-  return apiRequest(`/alerts/${encodeURIComponent(alertId)}`, {
+  return apiRequest(`/market-alerts/${encodeURIComponent(alertId)}`, {
     ...options,
     method: "DELETE",
   });

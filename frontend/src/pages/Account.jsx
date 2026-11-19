@@ -106,7 +106,7 @@ function Account() {
             </Link>
 
             <Link
-              to="/alerts"
+              to="/market-alerts"
               className="back-button"
               style={{ margin: 0 }}
             >
