@@ -19,11 +19,10 @@ from app.api import favorites
 from app.api.auth import router as auth_router
 from app.api.benchmark import router as benchmark_router
 from app.api.models import router as models_router
+from app.api.reports import router as reports_router
 from app.api.sector import router as sector_router
 from app.api.stocks import router as stocks_router
-from app.api.reports import router as reports_router
 from app.services.deployment_config import validate_deployment_config
-
 
 logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO"),

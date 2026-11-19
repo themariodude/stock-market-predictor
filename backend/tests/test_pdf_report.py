@@ -14,7 +14,6 @@ from app.services.pdf_report import (
 )
 from app.services.prediction_direction import PredictionDirectionError
 
-
 client = TestClient(app)
 
 
