@@ -425,3 +425,89 @@ def test_update_and_delete_require_authentication(alert_client):
 
     assert update.status_code == 401
     assert delete.status_code == 401
+
+
+@pytest.mark.parametrize(
+    "threshold",
+    [0.00001, 1.23456, 99.99999],
+)
+def test_create_rejects_excessive_threshold_precision(
+    alert_client, threshold
+):
+    client, headers = alert_client
+
+    response = client.post(
+        "/market-alerts",
+        headers=headers["a"],
+        json={
+            "ticker": "LMT",
+            "threshold_percent": threshold,
+            "direction": "increase",
+        },
+    )
+
+    assert response.status_code == 422
+
+
+@pytest.mark.parametrize(
+    "threshold",
+    [0.00001, 1.23456, 99.99999],
+)
+def test_update_rejects_excessive_threshold_precision(
+    alert_client, threshold
+):
+    client, headers = alert_client
+
+    created = client.post(
+        "/market-alerts",
+        headers=headers["a"],
+        json={
+            "ticker": "LMT",
+            "threshold_percent": 5,
+            "direction": "increase",
+        },
+    )
+
+    assert created.status_code == 201
+    alert_id = created.json()["id"]
+
+    response = client.patch(
+        f"/market-alerts/{alert_id}",
+        headers=headers["a"],
+        json={"threshold_percent": threshold},
+    )
+
+    assert response.status_code == 422
+
+    saved = client.get(
+        "/market-alerts",
+        headers=headers["a"],
+    )
+
+    assert saved.status_code == 200
+    assert Decimal(
+        str(saved.json()[0]["threshold_percent"])
+    ) == Decimal("5")
+
+
+@pytest.mark.parametrize(
+    "threshold",
+    [0.0001, 1.2345, 100],
+)
+def test_create_accepts_supported_threshold_precision(
+    alert_client, threshold
+):
+    client, headers = alert_client
+
+    response = client.post(
+        "/market-alerts",
+        headers=headers["a"],
+        json={
+            "ticker": "LMT",
+            "threshold_percent": threshold,
+            "direction": "increase",
+        },
+    )
+
+    assert response.status_code == 201
+

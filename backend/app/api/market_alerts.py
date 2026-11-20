@@ -21,7 +21,11 @@ AlertDirection = Literal["increase", "decrease", "either"]
 
 class AlertCreate(BaseModel):
     ticker: str = Field(min_length=1, max_length=10)
-    threshold_percent: Decimal = Field(gt=0, le=100)
+    threshold_percent: Decimal = Field(
+        gt=0,
+        le=100,
+        decimal_places=4,
+    )
     direction: AlertDirection
 
 
@@ -32,6 +36,7 @@ class AlertUpdate(BaseModel):
         default=None,
         gt=0,
         le=100,
+        decimal_places=4,
     )
     direction: AlertDirection | None = None
     is_active: bool | None = None
