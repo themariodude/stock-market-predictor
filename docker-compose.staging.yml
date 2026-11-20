@@ -45,6 +45,21 @@ services:
       start_period: 20s
     restart: unless-stopped
 
+  market-monitor:
+    image: ${BACKEND_IMAGE:-ghcr.io/${GHCR_OWNER}/stock-market-predictor-backend:${IMAGE_TAG}}
+    environment:
+      APP_ENV: ${APP_ENV:?APP_ENV is required}
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    depends_on:
+      db:
+        condition: service_healthy
+    command:
+      - python
+      - -m
+      - app.services.market_monitor_worker
+    restart: unless-stopped
+
   frontend:
     image: ${FRONTEND_IMAGE:-ghcr.io/${GHCR_OWNER}/stock-market-predictor-frontend:${IMAGE_TAG}}
     ports:
