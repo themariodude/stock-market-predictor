@@ -1,3 +1,5 @@
+import json
+
 import pytest
 
 from app.services.prediction_direction import (
@@ -113,3 +115,48 @@ def test_prediction_direction_requires_at_least_two_closes(monkeypatch):
 
     with pytest.raises(PredictionDirectionError):
         get_prediction_direction("LMT")
+
+
+@pytest.mark.parametrize(
+    "invalid_close",
+    [float("nan"), float("inf"), float("-inf"), None, 0, -1, "missing", True],
+)
+def test_prediction_skips_invalid_closes_and_keeps_matching_dates(
+    monkeypatch, invalid_close
+):
+    records = [
+        {"date": "2026-09-01", "close": invalid_close},
+        {"date": "2026-09-02", "close": 100.0},
+        {"date": "2026-09-03", "close": 102.0},
+        {"date": "2026-09-04", "close": invalid_close},
+        {"date": "2026-09-05", "close": 101.0},
+        {"date": "2026-09-06", "close": invalid_close},
+    ]
+    monkeypatch.setattr(
+        "app.services.prediction_direction.get_historical_stock_data",
+        lambda ticker, time_range: {"data": records},
+    )
+
+    result = get_prediction_direction("LMT")
+
+    assert result["as_of_date"] == "2026-09-05"
+    assert result["current_price"] == 101.0
+    assert result["predicted_price"] == 101.5
+    assert result["prediction_direction"] == "UP"
+    assert result["prediction_confidence"] == 25.0
+    assert result["explanation"]["window"] == {
+        "range": "1M",
+        "start_date": "2026-09-02",
+        "end_date": "2026-09-05",
+        "start_close": 100.0,
+        "end_close": 101.0,
+        "closing_prices": 3,
+    }
+    # Successful forecasts must be valid JSON without NaN/Infinity sent as null.
+    json.dumps(result, allow_nan=False)
+
+
+@pytest.mark.parametrize("invalid_price", [float("nan"), float("inf")])
+def test_direction_cannot_classify_nonfinite_prices_as_flat(invalid_price):
+    with pytest.raises(ValueError):
+        classify_prediction_direction(100.0, invalid_price)

@@ -25,7 +25,7 @@ a {
 /*Make authentication navigation links identifiable */
 .auth-panel .auth-copy a {
   color: #ffffff;
-  font-weight: 600
+  font-weight: 600;
   text-decoration: underline;
   text-underline-offset: 3px;
 }
@@ -691,6 +691,338 @@ button {
   .home-login-link,
   .account-link {
     margin-left: 0;
+  }
+}
+
+/* US-41 Market Change Alerts */
+
+.market-alerts-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.market-alerts-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.market-alert-panel {
+  margin: 1.5rem 0;
+  padding: 1.5rem;
+  border: 1px solid #2d3742;
+  border-radius: 12px;
+  background: #131c26;
+}
+
+.market-alert-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 1rem;
+}
+
+.market-alert-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.market-alert-form input,
+.market-alert-form select {
+  min-width: 150px;
+  padding: 0.75rem;
+  border: 1px solid #3a4653;
+  border-radius: 6px;
+  background: #18232e;
+  color: #ffffff;
+}
+
+.market-alert-form button {
+  padding: 0.75rem 1rem;
+}
+
+.market-alert-card {
+  margin: 1rem 0;
+  padding: 1.25rem;
+  border: 1px solid #3a4653;
+  border-radius: 10px;
+  background: #18232e;
+}
+
+.market-alert-card-header,
+.market-alert-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.market-alert-card-header {
+  justify-content: space-between;
+}
+
+.market-alert-card-header h3 {
+  margin: 0;
+}
+
+.market-alert-actions {
+  margin-top: 1rem;
+}
+
+.market-alert-form button:disabled,
+.market-alert-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* US-41 Market Notifications */
+
+.notification-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.notification-card {
+  margin: 1rem 0;
+  padding: 1.25rem;
+  border: 1px solid #3a4653;
+  border-radius: 10px;
+  background: #18232e;
+}
+
+.notification-unread {
+  border-left: 4px solid #63d391;
+}
+
+.notification-read {
+  opacity: 0.75;
+}
+
+.notification-card h3 {
+  margin: 0;
+}
+
+.notification-card p {
+  margin: 0.75rem 0;
+}
+
+.notification-date {
+  color: #aeb9c5;
+  font-size: 0.9rem;
+}
+
+.notification-empty {
+  padding: 1.5rem;
+  text-align: center;
+}
+
+
+/* US-41: Dashboard navigation shortcuts */
+
+.dashboard-shortcuts {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin: 1.5rem 0 2.5rem;
+}
+
+.dashboard-shortcuts .back-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0.85rem 1.25rem;
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+}
+
+.dashboard-shortcuts .back-button:hover {
+  background: #263747;
+}
+
+.dashboard-shortcuts .back-button:focus-visible {
+  outline: 2px solid #63d391;
+  outline-offset: 3px;
+}
+
+/* Responsive layout for smaller screens */
+
+@media (max-width: 600px) {
+  .dashboard-shortcuts {
+    gap: 0.75rem;
+  }
+
+    .dashboard-shortcuts .back-button {
+    flex: 1 1 150px;
+    text-align: center;
+  }
+}
+
+/* US-39/40 Stock Price Alerts */
+
+.alerts-page {
+
+.alerts-page h1 {
+  font-size: 2rem;
+  margin-bottom: 12px;
+}
+
+.alerts-page > p {
+  color: var(--text-muted, #94a3b8);
+  margin-bottom: 28px;
+}
+
+/* Create Alert Form */
+
+.alert-form-section {
+  background: var(--card-bg, #1e293b);
+  border: 1px solid var(--border-color, #334155);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 32px;
+}
+
+.alert-form-section h2 {
+  margin-bottom: 20px;
+  font-size: 1.3rem;
+}
+
+.alert-form {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+  align-items: end;
+}
+
+.alert-form > div {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.alert-form label {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.alert-form input,
+.alert-form select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px;
+  border: 1px solid var(--border-color, #475569);
+  border-radius: 8px;
+  background: var(--input-bg, #0f172a);
+  color: var(--text-color, #f8fafc);
+  font-size: 1rem;
+}
+
+.alert-form input:focus,
+.alert-form select:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.alert-submit-button {
+  grid-column: 1 / -1;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  background: #2563eb;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.alert-submit-button:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.alert-submit-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Saved Alerts */
+
+.alerts-list h2 {
+  margin-bottom: 20px;
+}
+
+.alerts-grid {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(260px, 1fr)
+  );
+  gap: 16px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.alert-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 20px;
+  border: 1px solid var(--border-color, #334155);
+  border-radius: 12px;
+  background: var(--card-bg, #1e293b);
+}
+
+.alert-card strong {
+  font-size: 1.2rem;
+}
+
+.alert-card p {
+  margin: 10px 0;
+}
+
+.alert-card small {
+  color: var(--text-muted, #94a3b8);
+}
+
+.alert-delete-button {
+  padding: 10px 16px;
+  border: 1px solid #dc2626;
+  border-radius: 8px;
+  background: transparent;
+  color: #f87171;
+  cursor: pointer;
+}
+
+.alert-delete-button:hover:not(:disabled) {
+  background: #991b1b;
+  color: white;
+}
+
+.alert-delete-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Responsive Layout */
+
+@media (max-width: 768px) {
+  .alerts-page {
+    padding: 20px 16px;
+  }
+
+  .alert-form {
+    grid-template-columns: 1fr;
+  }
+
+  .alerts-grid {
+    grid-template-columns: 1fr;
   }
 }
 

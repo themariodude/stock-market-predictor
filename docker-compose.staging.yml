@@ -28,6 +28,7 @@ services:
       DEMO_INVESTOR_EMAIL: ${DEMO_INVESTOR_EMAIL:?DEMO_INVESTOR_EMAIL is required}
       DEMO_INVESTOR_PASSWORD_HASH: ${DEMO_INVESTOR_PASSWORD_HASH:?DEMO_INVESTOR_PASSWORD_HASH is required}
       FRED_API_KEY: ${FRED_API_KEY:-}
+      MARKET_DATA_REFRESH_INTERVAL_SECONDS: ${MARKET_DATA_REFRESH_INTERVAL_SECONDS:-86400}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       CORS_ORIGINS: ${CORS_ORIGINS}
     depends_on:
@@ -43,6 +44,21 @@ services:
       timeout: 5s
       retries: 5
       start_period: 20s
+    restart: unless-stopped
+
+  market-monitor:
+    image: ${BACKEND_IMAGE:-ghcr.io/${GHCR_OWNER}/stock-market-predictor-backend:${IMAGE_TAG}}
+    environment:
+      APP_ENV: ${APP_ENV:?APP_ENV is required}
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    depends_on:
+      db:
+        condition: service_healthy
+    command:
+      - python
+      - -m
+      - app.services.market_monitor_worker
     restart: unless-stopped
 
   frontend:

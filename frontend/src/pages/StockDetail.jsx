@@ -6,6 +6,7 @@ import PredictionFactors from "../components/PredictionFactors";
 import StockChart from "../components/StockChart";
 import TimeRangeSelector from "../components/TimeRangeSelector";
 import FavoriteButton from "../components/FavoriteButton";
+import { isValidPrediction } from "../utils/prediction";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
 
@@ -26,6 +27,7 @@ function formatCurrency(value) {
 }
 
 function StockDetail() {
+  const token = localStorage.getItem("stock-market-auth-token");
   const { ticker } = useParams();
   const [range, setRange] = useState("1Y");
   const [isPdfExporting, setIsPdfExporting] = useState(false);
@@ -60,6 +62,9 @@ function StockDetail() {
         }
 
         const data = await response.json();
+        if (!isValidPrediction(data)) {
+          throw new Error("Prediction data is incomplete. Please try again later.");
+        }
         setPrediction(data);
       } catch (error) {
         if (error.name !== "AbortError") {
@@ -157,9 +162,12 @@ function StockDetail() {
   }, []);
 
   const predictionDirectionClass =
-    prediction?.prediction_direction.toLowerCase() ?? "";
+    prediction?.prediction_direction?.toLowerCase() ?? "";
+
   const hasPredictionConfidence =
-    Number.isFinite(prediction?.prediction_confidence);
+    Number.isFinite(prediction?.prediction_confidence) &&
+    Number.isFinite(prediction?.prediction_uncertainty);
+
   const economicFactors = Array.isArray(prediction?.economic_factors)
     ? prediction.economic_factors
     : [];
@@ -188,7 +196,11 @@ function StockDetail() {
 
     <div className="stock-header">
       <h1>{ticker}</h1>
-      <FavoriteButton key={ticker} ticker={ticker} />
+
+    <div className="stock-header">
+      <h1>{ticker}</h1>
+
+      <FavoriteButton key={ticker} ticker={ticker} token={token} />
 
       <button
         type="button"
@@ -198,6 +210,8 @@ function StockDetail() {
       >
         {isPdfExporting ? "Generating PDF..." : "Export PDF"}
       </button>
+    </div>
+
     </div>
       {pdfExportError && (
         <p className="pdf-export-error" role="alert">
@@ -261,7 +275,7 @@ function StockDetail() {
         )}
 
         {!isPredictionLoading && predictionError && (
-          <p className="prediction-error">{predictionError}</p>
+          <p className="prediction-error" role="alert">{predictionError}</p>
         )}
       </section>
 
@@ -381,7 +395,9 @@ function StockDetail() {
                 <li className="factor-card" key={factor.id}>
                   <span>{factor.name}</span>
                   <strong>
-                    {factor.value.toFixed(2)}{factor.unit}
+                    {Number.isFinite(factor.value)
+                      ? `${factor.value.toFixed(2)}${factor.unit}`
+                      : "Not available"}
                   </strong>
                   <small>Published {factor.published_on}</small>
                 </li>

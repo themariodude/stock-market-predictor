@@ -9,7 +9,7 @@ Each forecast includes an explanation built from the same values that
 produced it.
 """
 
-from math import sqrt
+from math import isfinite, sqrt
 from typing import Any
 
 from app.services.historical_stock_data import (
@@ -68,6 +68,9 @@ def classify_prediction_direction(
 
     current = float(current_price)
     predicted = float(predicted_price)
+
+    if not isfinite(current) or not isfinite(predicted):
+        raise ValueError("Current and predicted prices must be finite.")
 
     if predicted > current:
         return "UP"
@@ -207,14 +210,26 @@ def get_prediction_direction(ticker: str) -> dict[str, Any]:
 
     try:
         history = get_historical_stock_data(symbol, HISTORY_RANGE)
-        priced_records = [
-            record for record in history["data"] if record.get("close") is not None
-        ]
-        closes = [float(record["close"]) for record in priced_records]
+        priced_records = []
+        closes = []
+        for record in history["data"]:
+            raw_close = record.get("close")
+            if isinstance(raw_close, bool):
+                continue
+            try:
+                close = float(raw_close)
+            except (TypeError, ValueError, OverflowError):
+                continue
+            # Providers can return an incomplete latest row containing NaN.
+            # Keep the date and close together when excluding unusable prices.
+            if not isfinite(close) or close <= 0:
+                continue
+            priced_records.append(record)
+            closes.append(close)
 
         if len(closes) < 2:
             raise PredictionDirectionError(
-                f"At least two closing prices are required for {symbol}."
+                f"At least two valid closing prices are required for {symbol}."
             )
 
         daily_changes = [
