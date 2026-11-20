@@ -12,14 +12,17 @@ import logging
 import os
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import create_engine, text
 
 from app.api import favorites
+from app.api.alerts import router as alerts_router
 from app.api.auth import router as auth_router
 from app.api.benchmark import router as benchmark_router
+from app.api.market_alerts import router as market_alerts_router
 from app.api.models import router as models_router
+from app.api.notifications import router as notifications_router
 from app.api.sector import router as sector_router
 from app.api.stocks import router as stocks_router
 from app.services.deployment_config import validate_deployment_config
@@ -92,6 +95,23 @@ def health() -> dict:
     return {"status": "ok", "database": db_status}
 
 
+@app.get("/ready")
+def readiness() -> dict:
+    """Readiness probe: check whether PostgreSQL is available."""
+    if _engine is None:
+        log.warning("Database readiness check failed: not configured.")
+        raise HTTPException(status_code=503, detail="Database unavailable")
+
+    try:
+        with _engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+    except Exception:
+        log.warning("Database readiness check failed.")
+        raise HTTPException(status_code=503, detail="Database unavailable")
+
+    return {"status": "ok", "database": "ok"}
+
+
 app.include_router(stocks_router)
 
 app.include_router(models_router)
@@ -103,3 +123,9 @@ app.include_router(favorites.router)
 app.include_router(sector_router)
 
 app.include_router(benchmark_router)
+
+app.include_router(alerts_router)
+
+app.include_router(market_alerts_router)
+
+app.include_router(notifications_router)
