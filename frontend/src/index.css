@@ -294,18 +294,51 @@ button {
   padding: 2rem;
 }
 
+
 .stock-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
-  margin-bottom: 24px;
 }
 
 .stock-header h1 {
   margin: 0;
 }
+
+.stock-header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
+.stock-header-actions .export-pdf-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0.6rem 1rem;
+  background-color: #ffffff;
+  color: #182b43;
+  border: 1px solid #c4cdd7;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.stock-header-actions .export-pdf-button:hover:not(:disabled) {
+  background-color: #eaf0f5;
+}
+
+
 
 .prediction-direction {
   display: flex;
@@ -1028,19 +1061,23 @@ button {
 
 /* US-37: Export PDF button */
 .export-pdf-button {
-  background-color: #131c26;
-  color: #63d391;
-  border: 1px solid #63d391;
-  border-radius: 8px;
-  padding: 0.65rem 1.25rem;
-  font-size: 0.95rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #ffffff;
+  color: #182b43;
+  border: 1px solid #c4cdd7;
+  border-radius: 10px;
+  padding: 0.85rem 1.25rem;
+  min-height: 50px;
+  font-size: 1rem;
+  font-family: inherit;
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.2s ease;
 }
-
 .export-pdf-button:hover:not(:disabled) {
-  background-color: #244233;
+  background-color: #eaf0f5;
 }
 
 .export-pdf-button:focus-visible {
