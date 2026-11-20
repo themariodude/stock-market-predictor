@@ -230,3 +230,6 @@ __marimo__/
 __pycache__/
 *.pyc
 .pytest_cache/
+
+# Local database backups
+/backups/
