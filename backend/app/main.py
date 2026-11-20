@@ -11,7 +11,7 @@ import logging
 import os
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import create_engine, text
 
@@ -75,6 +75,23 @@ def health() -> dict:
             log.warning("Database health check failed.")
             db_status = "error"
     return {"status": "ok", "database": db_status}
+
+
+@app.get("/ready")
+def readiness() -> dict:
+    """Readiness probe: check whether PostgreSQL is available."""
+    if _engine is None:
+        log.warning("Database readiness check failed: not configured.")
+        raise HTTPException(status_code=503, detail="Database unavailable")
+
+    try:
+        with _engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+    except Exception:
+        log.warning("Database readiness check failed.")
+        raise HTTPException(status_code=503, detail="Database unavailable")
+
+    return {"status": "ok", "database": "ok"}
 
 
 app.include_router(stocks_router)
