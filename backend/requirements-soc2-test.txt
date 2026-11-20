@@ -1,0 +1,18 @@
+# Single runtime dependency list for the backend.
+# Docker installs from THIS file only. Per-story requirements files cannot be
+# composed — merge them here and delete them.
+
+fastapi==0.162.0
+uvicorn[standard]==0.34.0
+sqlalchemy==2.0.36
+alembic==1.20.0
+psycopg[binary]==3.2.3
+pydantic==2.10.4
+pydantic-settings==2.7.0
+
+# Market data / analysis
+yfinance==1.7.0
+pandas==2.2.3
+numpy==2.2.1
+
+scikit-learn==1.5.2

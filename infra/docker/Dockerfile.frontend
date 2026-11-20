@@ -3,14 +3,18 @@ FROM node:24-alpine
 
 WORKDIR /app
 
+# Update npm within the supported Node.js version range.
+# Test this candidate before retaining it in the final image.
+RUN npm install -g npm@11
+
 # Lockfile first so this layer caches across source edits.
 COPY frontend/package.json frontend/package-lock.json ./
+
 RUN npm ci
 
 COPY frontend/ ./
 
 EXPOSE 5173
 
-# --host is required: Vite binds 127.0.0.1 by default, which inside a
-# container means the port mapping appears to do nothing.
+# Allow Vite to accept connections outside the container.
 CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
