@@ -23,6 +23,7 @@ from app.api.benchmark import router as benchmark_router
 from app.api.market_alerts import router as market_alerts_router
 from app.api.models import router as models_router
 from app.api.notifications import router as notifications_router
+from app.api.reports import router as reports_router
 from app.api.sector import router as sector_router
 from app.api.stocks import router as stocks_router
 from app.services.deployment_config import validate_deployment_config
@@ -129,3 +130,5 @@ app.include_router(alerts_router)
 app.include_router(market_alerts_router)
 
 app.include_router(notifications_router)
+
+app.include_router(reports_router)

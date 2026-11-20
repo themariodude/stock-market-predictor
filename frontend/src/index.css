@@ -1025,3 +1025,36 @@ button {
     grid-template-columns: 1fr;
   }
 }
+
+/* US-37: Export PDF button */
+.export-pdf-button {
+  background-color: #131c26;
+  color: #63d391;
+  border: 1px solid #63d391;
+  border-radius: 8px;
+  padding: 0.65rem 1.25rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.export-pdf-button:hover:not(:disabled) {
+  background-color: #244233;
+}
+
+.export-pdf-button:focus-visible {
+  outline: 2px solid #63d391;
+  outline-offset: 3px;
+}
+
+.export-pdf-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.pdf-export-error {
+  color: #ff8f8f;
+  margin-top: 0.75rem;
+  font-weight: 500;
+}
