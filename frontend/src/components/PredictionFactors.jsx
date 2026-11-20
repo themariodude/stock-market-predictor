@@ -1,5 +1,5 @@
 function formatFactorValue(factor) {
-  if (typeof factor.value !== "number") {
+  if (!Number.isFinite(factor.value)) {
     return "Not available";
   }
 
@@ -11,6 +11,10 @@ function formatFactorValue(factor) {
   }
 
   return amount;
+}
+
+function formatClosingPrice(value) {
+  return Number.isFinite(value) ? `$${value.toFixed(2)}` : "Not available";
 }
 
 function PredictionFactors({ explanation }) {
@@ -32,8 +36,8 @@ function PredictionFactors({ explanation }) {
       {dataWindow && (
         <p>
           Based on {dataWindow.closing_prices} closing prices from{" "}
-          {dataWindow.start_date} (${dataWindow.start_close.toFixed(2)}) to{" "}
-          {dataWindow.end_date} (${dataWindow.end_close.toFixed(2)}).
+          {dataWindow.start_date} ({formatClosingPrice(dataWindow.start_close)}) to{" "}
+          {dataWindow.end_date} ({formatClosingPrice(dataWindow.end_close)}).
         </p>
       )}
 
