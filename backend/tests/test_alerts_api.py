@@ -431,9 +431,7 @@ def test_update_and_delete_require_authentication(alert_client):
     "threshold",
     [0.00001, 1.23456, 99.99999],
 )
-def test_create_rejects_excessive_threshold_precision(
-    alert_client, threshold
-):
+def test_create_rejects_excessive_threshold_precision(alert_client, threshold):
     client, headers = alert_client
 
     response = client.post(
@@ -453,9 +451,7 @@ def test_create_rejects_excessive_threshold_precision(
     "threshold",
     [0.00001, 1.23456, 99.99999],
 )
-def test_update_rejects_excessive_threshold_precision(
-    alert_client, threshold
-):
+def test_update_rejects_excessive_threshold_precision(alert_client, threshold):
     client, headers = alert_client
 
     created = client.post(
@@ -485,18 +481,14 @@ def test_update_rejects_excessive_threshold_precision(
     )
 
     assert saved.status_code == 200
-    assert Decimal(
-        str(saved.json()[0]["threshold_percent"])
-    ) == Decimal("5")
+    assert Decimal(str(saved.json()[0]["threshold_percent"])) == Decimal("5")
 
 
 @pytest.mark.parametrize(
     "threshold",
     [0.0001, 1.2345, 100],
 )
-def test_create_accepts_supported_threshold_precision(
-    alert_client, threshold
-):
+def test_create_accepts_supported_threshold_precision(alert_client, threshold):
     client, headers = alert_client
 
     response = client.post(
@@ -510,4 +502,3 @@ def test_create_accepts_supported_threshold_precision(
     )
 
     assert response.status_code == 201
-
