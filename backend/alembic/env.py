@@ -7,6 +7,8 @@ from sqlalchemy import create_engine, pool
 import app.models.macro  # noqa: F401
 import app.models.password_reset  # noqa: F401
 import app.models.user  # noqa: F401
+import app.models.market_alert  # noqa: F401
+import app.models.notification_event  # noqa: F401
 from app.database import Base
 
 config = context.config
@@ -26,6 +28,8 @@ MANAGED_TABLES = {
     "macro_observations",
     "users",
     "password_reset_tokens",
+    "market_alerts",
+    "notification_events",
 }
 
 

@@ -7,7 +7,10 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Account from "./pages/Account";
 import Watchlist from "./pages/Watchlist";
+
 import Alerts from "./pages/Alerts";
+import MarketAlerts from "./pages/MarketAlerts";
+import Notifications from "./pages/Notifications";
 
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
@@ -33,8 +36,12 @@ function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         {/* Shows the data for an individual stock */}
         <Route path="/stocks/:ticker" element={<StockDetail />} />
-        {/* Shows the user's stock alerts */}
+       {/* US-39/40: Absolute-price alerts */}
         <Route path="/alerts" element={<Alerts />} />
+        {/* US-41: Percentage-change alerts */}
+        <Route path="/market-alerts" element={<MarketAlerts />} />
+        {/* US-41: Notification history */}
+        <Route path="/notifications" element={<Notifications />} />
       </Routes>
     </BrowserRouter>
   );
