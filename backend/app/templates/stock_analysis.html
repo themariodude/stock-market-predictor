@@ -76,6 +76,8 @@
         {% endif %}
     </section>
 
+    {% set explanation = prediction.get("explanation") or {} %}
+
     <section>
         <h2>Prediction Direction</h2>
         <p>Historical data through: {{ prediction.as_of_date }}</p>
@@ -87,6 +89,16 @@
             <tr>
                 <td>Predicted Direction</td>
                 <td>{{ prediction.direction_label }}</td>
+            </tr>
+            <tr>
+                <td>Forecast Horizon</td>
+                <td>
+                    {% if explanation.get("horizon") %}
+                        {{ explanation.horizon|replace("_", " ")|capitalize }}
+                    {% else %}
+                        Not specified
+                    {% endif %}
+                </td>
             </tr>
             <tr>
                 <td>Historical Closing Price</td>
@@ -109,14 +121,35 @@
                     {% endif %}
                 </td>
             </tr>
+            <tr>
+                <td>Uncertainty Indicator</td>
+                <td>
+                    {% if prediction.get("prediction_uncertainty") is not none %}
+                        {{ "%.1f"|format(prediction.prediction_uncertainty) }} / 100
+                    {% else %}
+                        Unavailable
+                    {% endif %}
+                </td>
+            </tr>
         </table>
+        <p class="forecast-caution">
+            Forecasts are estimates, not guarantees of future prices.
+            The uncertainty indicator is 100 minus the confidence score;
+            neither is a calibrated probability of correctness or a
+            prediction interval.
+        </p>
     </section>
-
-    {% set explanation = prediction.get("explanation") or {} %}
 
     <section>
         <h2>Prediction Explanation</h2>
         <p>{{ explanation.get("summary", "Not available") }}</p>
+
+        {% set window = explanation.get("window") or {} %}
+        {% if window.get("start_date") and window.get("end_date") %}
+        <p><strong>Forecast input window:</strong>
+            {{ window.start_date }} to {{ window.end_date }}.
+        </p>
+        {% endif %}
 
         {% if explanation.get("factors") %}
         <h3>Prediction Factors</h3>
@@ -140,6 +173,12 @@
             </tr>
             {% endfor %}
         </table>
+        {% endif %}
+
+        {% if explanation.get("not_used") %}
+        <p><strong>Not used in this forecast:</strong>
+            {{ explanation.not_used|join("; ") }}.
+        </p>
         {% endif %}
 
         {% if explanation.get("confidence_basis") %}
