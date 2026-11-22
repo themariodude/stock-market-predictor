@@ -185,3 +185,32 @@ def test_api_returns_explanation_alongside_existing_fields(monkeypatch):
     assert data["economic_factors"] == []
     assert data["explanation"]["method"] == "momentum"
     assert data["explanation"]["window"]["end_date"] == data["as_of_date"]
+
+
+def test_api_uses_last_valid_close_when_latest_market_close_is_nan(monkeypatch):
+    patch_history(monkeypatch, fake_history([100.0, 102.0, 101.0, float("nan")]))
+    monkeypatch.setattr("app.api.stocks.get_economic_factors", lambda as_of_date: [])
+
+    response = TestClient(app).get("/stocks/LMT/prediction-direction")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["as_of_date"] == "2026-09-03"
+    assert data["current_price"] == 101.0
+    assert data["predicted_price"] == 101.5
+    assert data["prediction_direction"] == "UP"
+    assert data["prediction_confidence"] == 25.0
+    assert data["explanation"]["window"]["end_date"] == "2026-09-03"
+    assert data["explanation"]["window"]["end_close"] == 101.0
+
+
+def test_api_rejects_forecast_when_too_few_valid_closes_remain(monkeypatch):
+    patch_history(
+        monkeypatch,
+        fake_history([float("nan"), 101.0, float("inf"), None]),
+    )
+
+    response = TestClient(app).get("/stocks/LMT/prediction-direction")
+
+    assert response.status_code == 502
+    assert "At least two valid closing prices" in response.json()["detail"]

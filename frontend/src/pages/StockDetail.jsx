@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { downloadStockPdf } from "../utils/pdfExport.js";
 
 import PredictionFactors from "../components/PredictionFactors";
 import StockChart from "../components/StockChart";
 import TimeRangeSelector from "../components/TimeRangeSelector";
 import FavoriteButton from "../components/FavoriteButton";
+import { isValidPrediction } from "../utils/prediction";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
 
@@ -25,8 +27,11 @@ function formatCurrency(value) {
 }
 
 function StockDetail() {
+  const token = localStorage.getItem("stock-market-auth-token");
   const { ticker } = useParams();
   const [range, setRange] = useState("1Y");
+  const [isPdfExporting, setIsPdfExporting] = useState(false);
+  const [pdfExportError, setPdfExportError] = useState("");
   const [prediction, setPrediction] = useState(null);
   const [predictionError, setPredictionError] = useState("");
   const [isPredictionLoading, setIsPredictionLoading] = useState(true);
@@ -57,6 +62,9 @@ function StockDetail() {
         }
 
         const data = await response.json();
+        if (!isValidPrediction(data)) {
+          throw new Error("Prediction data is incomplete. Please try again later.");
+        }
         setPrediction(data);
       } catch (error) {
         if (error.name !== "AbortError") {
@@ -154,21 +162,64 @@ function StockDetail() {
   }, []);
 
   const predictionDirectionClass =
-    prediction?.prediction_direction.toLowerCase() ?? "";
+    prediction?.prediction_direction?.toLowerCase() ?? "";
+
   const hasPredictionConfidence =
-    typeof prediction?.prediction_confidence === "number";
+    Number.isFinite(prediction?.prediction_confidence) &&
+    Number.isFinite(prediction?.prediction_uncertainty);
+
   const economicFactors = Array.isArray(prediction?.economic_factors)
     ? prediction.economic_factors
     : [];
 
-  return (
-    <main className="stock-detail-page">
-    <Link to="/dashboard">Back to Dashboard</Link>
+  async function handleExportPdf() {
+    if (isPdfExporting) return;
 
-    <div className="stock-header">
-      <h1>{ticker}</h1>
-      <FavoriteButton key={ticker} ticker={ticker} />
-    </div>
+    setIsPdfExporting(true);
+    setPdfExportError("");
+
+    try {
+      await downloadStockPdf(ticker, API_BASE_URL);
+    } catch (error) {
+      console.error("PDF export failed:", error);
+
+      setPdfExportError(
+        "Unable to export PDF. Check your connection and try again."
+      );
+    } finally {
+      setIsPdfExporting(false);
+    }
+  }
+  return (
+  <main className="stock-detail-page">
+    <Link to="/dashboard">Back to Dashboard</Link>
+      <div className="stock-header">
+        <h1>{ticker}</h1>
+
+        <div className="stock-header-actions">
+          <FavoriteButton
+            key={ticker}
+            ticker={ticker}
+            token={token}
+          />
+
+          <button
+            type="button"
+            className="export-pdf-button"
+            onClick={handleExportPdf}
+            disabled={isPdfExporting}
+          >
+            {isPdfExporting ? "Generating PDF..." : "Export PDF"}
+          </button>
+        </div>
+      </div>
+
+
+    {pdfExportError && (
+      <p className="pdf-export-error" role="alert">
+        {pdfExportError}
+      </p>
+    )}
 
     <section className="prediction-direction">
         <div>
@@ -188,15 +239,16 @@ function StockDetail() {
           <div className="prediction-metrics">
             <div>
               <span>Predicted Price</span>
-              <strong>${prediction.predicted_price.toFixed(2)}</strong>
+              <strong>{formatCurrency(prediction.predicted_price)}</strong>
             </div>
+
             <div>
               <span>Predicted Change</span>
               <strong>
-                {prediction.predicted_change >= 0 ? "+" : ""}
-                {prediction.predicted_change.toFixed(2)} (
-                {prediction.predicted_percent_change >= 0 ? "+" : ""}
-                {prediction.predicted_percent_change.toFixed(2)}%)
+                {Number.isFinite(prediction.predicted_change) &&
+                Number.isFinite(prediction.predicted_percent_change)
+                  ? `${prediction.predicted_change > 0 ? "+" : ""}${prediction.predicted_change.toFixed(2)} (${prediction.predicted_percent_change > 0 ? "+" : ""}${prediction.predicted_percent_change.toFixed(2)}%)`
+                  : "Not available"}
               </strong>
             </div>
             {hasPredictionConfidence && (
@@ -215,7 +267,9 @@ function StockDetail() {
                   />
                 </div>
                 <small>
-                  {prediction.prediction_uncertainty.toFixed(1)}% uncertainty
+                  {Number.isFinite(prediction.prediction_uncertainty)
+                  ? `${prediction.prediction_uncertainty.toFixed(1)}% uncertainty`
+                  : "Uncertainty unavailable"}
                 </small>
               </div>
             )}
@@ -223,7 +277,7 @@ function StockDetail() {
         )}
 
         {!isPredictionLoading && predictionError && (
-          <p className="prediction-error">{predictionError}</p>
+          <p className="prediction-error" role="alert">{predictionError}</p>
         )}
       </section>
 
@@ -343,7 +397,9 @@ function StockDetail() {
                 <li className="factor-card" key={factor.id}>
                   <span>{factor.name}</span>
                   <strong>
-                    {factor.value.toFixed(2)}{factor.unit}
+                    {Number.isFinite(factor.value)
+                      ? `${factor.value.toFixed(2)}${factor.unit}`
+                      : "Not available"}
                   </strong>
                   <small>Published {factor.published_on}</small>
                 </li>

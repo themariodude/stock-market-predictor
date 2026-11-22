@@ -188,9 +188,19 @@ function Dashboard() {
 
       <h1>Defense Stock Dashboard</h1>
 
-      <Link to="/watchlist" className="back-button">
-        My Watchlist
-      </Link>
+      <div className="dashboard-shortcuts">
+        <Link to="/watchlist" className="back-button">
+          My Watchlist
+        </Link>
+
+        <Link to="/market-alerts" className="back-button">
+          Market Alerts
+        </Link>
+
+        <Link to="/notifications" className="back-button">
+          Notifications
+        </Link>
+      </div>
 
       <p>Select a stock to view its historical performance.</p>
 

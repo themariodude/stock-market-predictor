@@ -1,0 +1,210 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ ticker }} Stock Analysis Report</title>
+</head>
+<body>
+    <header>
+        <h1>Stock Analysis Report</h1>
+        <p class="subtitle">{{ company_name }} ({{ ticker }})</p>
+        <p class="timestamp">Generated: {{ generated_at }}</p>
+    </header>
+
+    <section>
+        <h2>Current Stock Information</h2>
+
+        {% if stock is not none %}
+        <table>
+            <tr>
+                <th>Metric</th>
+                <th>Value</th>
+            </tr>
+            <tr>
+                <td>Current Price</td>
+                <td>${{ "%.2f"|format(stock.current_price) }}</td>
+            </tr>
+            <tr>
+                <td>Previous Close</td>
+                <td>
+                    {% if stock.previous_close is not none %}
+                        ${{ "%.2f"|format(stock.previous_close) }}
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </td>
+            </tr>
+            <tr>
+                <td>Price Change</td>
+                <td>
+                    {% if stock.price_change is not none %}
+                        ${{ "%.2f"|format(stock.price_change) }}
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </td>
+            </tr>
+            <tr>
+                <td>Percentage Change</td>
+                <td>
+                    {% if stock.percent_change is not none %}
+                        {{ "%.2f"|format(stock.percent_change) }}%
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </td>
+            </tr>
+            <tr>
+                <td>Trading Volume</td>
+                <td>
+                    {% if stock.volume is not none %}
+                        {{ "{:,}".format(stock.volume) }}
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </td>
+            </tr>
+         </table>
+        {% else %}
+        <p>
+            Current market information is temporarily unavailable.
+            The prediction below uses historical closing prices
+            through {{ prediction.as_of_date }} and does not
+            represent a live market quote.
+        </p>
+        {% endif %}
+    </section>
+
+    {% set explanation = prediction.get("explanation") or {} %}
+
+    <section>
+        <h2>Prediction Direction</h2>
+        <p>Historical data through: {{ prediction.as_of_date }}</p>
+        <table>
+            <tr>
+                <th>Metric</th>
+                <th>Value</th>
+            </tr>
+            <tr>
+                <td>Predicted Direction</td>
+                <td>{{ prediction.direction_label }}</td>
+            </tr>
+            <tr>
+                <td>Forecast Horizon</td>
+                <td>
+                    {% if explanation.get("horizon") %}
+                        {{ explanation.horizon|replace("_", " ")|capitalize }}
+                    {% else %}
+                        Not specified
+                    {% endif %}
+                </td>
+            </tr>
+            <tr>
+                <td>Historical Closing Price</td>
+                <td>${{ "%.2f"|format(prediction.current_price) }}</td>
+            </tr>
+            <tr>
+                <td>Predicted Price</td>
+                <td>${{ "%.2f"|format(prediction.predicted_price) }}</td>
+            </tr>
+            <tr>
+                <td>Predicted Percentage Change</td>
+                <td>{{ "%.2f"|format(prediction.predicted_percent_change) }}%</td>
+            </tr>
+            <tr>
+                <td>Confidence</td>
+                <td>
+                    {{ prediction.confidence_label }}
+                    {% if prediction.prediction_confidence is not none %}
+                        ({{ prediction.prediction_confidence }}%)
+                    {% endif %}
+                </td>
+            </tr>
+            <tr>
+                <td>Uncertainty Indicator</td>
+                <td>
+                    {% if prediction.get("prediction_uncertainty") is not none %}
+                        {{ "%.1f"|format(prediction.prediction_uncertainty) }} / 100
+                    {% else %}
+                        Unavailable
+                    {% endif %}
+                </td>
+            </tr>
+        </table>
+        <p class="forecast-caution">
+            Forecasts are estimates, not guarantees of future prices.
+            The uncertainty indicator is 100 minus the confidence score;
+            neither is a calibrated probability of correctness or a
+            prediction interval.
+        </p>
+    </section>
+
+    <section>
+        <h2>Prediction Explanation</h2>
+        <p>{{ explanation.get("summary", "Not available") }}</p>
+
+        {% set window = explanation.get("window") or {} %}
+        {% if window.get("start_date") and window.get("end_date") %}
+        <p><strong>Forecast input window:</strong>
+            {{ window.start_date }} to {{ window.end_date }}.
+        </p>
+        {% endif %}
+
+        {% if explanation.get("factors") %}
+        <h3>Prediction Factors</h3>
+        <table>
+            <tr>
+                <th>Factor</th>
+                <th>Value</th>
+                <th>Explanation</th>
+            </tr>
+            {% for factor in explanation.factors %}
+            <tr>
+                <td>{{ factor.label }}</td>
+                <td>
+                    {% if factor.value is not none %}
+                        {{ factor.value }} {{ factor.unit }}
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </td>
+                <td>{{ factor.role }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+        {% endif %}
+
+        {% if explanation.get("not_used") %}
+        <p><strong>Not used in this forecast:</strong>
+            {{ explanation.not_used|join("; ") }}.
+        </p>
+        {% endif %}
+
+        {% if explanation.get("confidence_basis") %}
+        <p><strong>Confidence note:</strong>
+            {{ explanation.confidence_basis }}
+        </p>
+        {% endif %}
+    </section>
+
+    {% if explanation.get("limitations") %}
+    <section>
+        <h2>Model Limitations</h2>
+        <ul>
+            {% for limitation in explanation.limitations %}
+            <li>{{ limitation }}</li>
+            {% endfor %}
+        </ul>
+    </section>
+    {% endif %}
+
+    <footer>
+        <p>
+            This report is for informational purposes only,
+            not financial advice. Market quotes and historical
+            prediction inputs may have different timestamps.
+        </p>
+    </footer>
+</body>
+</html>
