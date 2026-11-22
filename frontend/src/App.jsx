@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
@@ -9,7 +9,6 @@ import Account from "./pages/Account";
 import Watchlist from "./pages/Watchlist";
 
 import Alerts from "./pages/Alerts";
-import MarketAlerts from "./pages/MarketAlerts";
 import Notifications from "./pages/Notifications";
 
 import ForgotPassword from "./pages/ForgotPassword";
@@ -39,7 +38,7 @@ function App() {
        {/* US-39/40: Absolute-price alerts */}
         <Route path="/alerts" element={<Alerts />} />
         {/* US-41: Percentage-change alerts */}
-        <Route path="/market-alerts" element={<MarketAlerts />} />
+        <Route path="/market-alerts" element={<Navigate to="/alerts" replace />} />
         {/* US-41: Notification history */}
         <Route path="/notifications" element={<Notifications />} />
       </Routes>
