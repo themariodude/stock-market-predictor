@@ -47,6 +47,12 @@ section {
     margin-bottom: 18px;
 }
 
+.forecast-caution {
+    border-left: 3px solid #174a73;
+    background-color: #eaf1f7;
+    padding: 8px 12px;
+}
+
 table {
     width: 100%;
     border-collapse: collapse;

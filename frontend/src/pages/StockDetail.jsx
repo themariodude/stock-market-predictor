@@ -191,33 +191,35 @@ function StockDetail() {
     }
   }
   return (
-    <main className="stock-detail-page">
+  <main className="stock-detail-page">
     <Link to="/dashboard">Back to Dashboard</Link>
+      <div className="stock-header">
+        <h1>{ticker}</h1>
 
-    <div className="stock-header">
-      <h1>{ticker}</h1>
+        <div className="stock-header-actions">
+          <FavoriteButton
+            key={ticker}
+            ticker={ticker}
+            token={token}
+          />
 
-    <div className="stock-header">
-      <h1>{ticker}</h1>
+          <button
+            type="button"
+            className="export-pdf-button"
+            onClick={handleExportPdf}
+            disabled={isPdfExporting}
+          >
+            {isPdfExporting ? "Generating PDF..." : "Export PDF"}
+          </button>
+        </div>
+      </div>
 
-      <FavoriteButton key={ticker} ticker={ticker} token={token} />
 
-      <button
-        type="button"
-        className="export-pdf-button"
-        onClick={handleExportPdf}
-        disabled={isPdfExporting}
-      >
-        {isPdfExporting ? "Generating PDF..." : "Export PDF"}
-      </button>
-    </div>
-
-    </div>
-      {pdfExportError && (
-        <p className="pdf-export-error" role="alert">
-          {pdfExportError}
-        </p>
-      )}
+    {pdfExportError && (
+      <p className="pdf-export-error" role="alert">
+        {pdfExportError}
+      </p>
+    )}
 
     <section className="prediction-direction">
         <div>
