@@ -25,6 +25,7 @@ services:
     environment:
       DATABASE_URL: ${DATABASE_URL}
       FRED_API_KEY: ${FRED_API_KEY:-}
+      MARKET_DATA_REFRESH_INTERVAL_SECONDS: ${MARKET_DATA_REFRESH_INTERVAL_SECONDS:-86400}
     ports:
       - "${BACKEND_PORT}:8000"
     volumes:

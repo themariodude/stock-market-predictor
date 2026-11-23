@@ -1,0 +1,89 @@
+
+@page {
+    size: Letter;
+    margin: 0.75in;
+}
+
+body {
+    font-family: "DejaVu Sans", sans-serif;
+    font-size: 10px;
+    color: #263238;
+    line-height: 1.5;
+}
+
+header {
+    border-bottom: 2px solid #174a73;
+    margin-bottom: 24px;
+    padding-bottom: 12px;
+}
+
+h1 {
+    color: #174a73;
+    font-size: 24px;
+    margin: 0;
+}
+
+h2 {
+    color: #174a73;
+    font-size: 15px;
+    margin-top: 22px;
+    margin-bottom: 10px;
+}
+
+h3 {
+    font-size: 12px;
+    margin-bottom: 8px;
+}
+
+.subtitle {
+    font-size: 13px;
+}
+
+.timestamp {
+    color: #607d8b;
+}
+
+section {
+    margin-bottom: 18px;
+}
+
+.forecast-caution {
+    border-left: 3px solid #174a73;
+    background-color: #eaf1f7;
+    padding: 8px 12px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 12px;
+    table-layout: auto;
+}
+
+th, td {
+    padding: 8px;
+    border: 1px solid #d8e0e6;
+    text-align: left;
+    overflow-wrap: anywhere;
+}
+
+th {
+    background-color: #eaf1f7;
+    color: #174a73;
+}
+
+tr {
+    break-inside: avoid;
+}
+
+li {
+    margin-bottom: 5px;
+}
+
+footer {
+    margin-top: 28px;
+    padding-top: 10px;
+    border-top: 1px solid #d8e0e6;
+    font-size: 9px;
+    color: #607d8b;
+}
