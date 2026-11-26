@@ -9,45 +9,73 @@ import time
 from deploy import aws
 
 COMPOSE_FRONTEND_CHECK = (
-    'frontend_id="$(docker ps -q '
+    'caddy_id="$(docker ps -q '
     "--filter label=com.docker.compose.project=stock-market-predictor "
-    '--filter label=com.docker.compose.service=frontend)"\n'
-    'test -n "$frontend_id"\n'
+    '--filter label=com.docker.compose.service=caddy)"\n'
+    'test -n "$caddy_id"\n'
     "test \"$(docker inspect --format '{{.State.Running}}' "
-    '"$frontend_id")" = "true"\n'
-    "docker port \"$frontend_id\" 80/tcp | grep -Eq ':80$'\n"
+    '"$caddy_id")" = "true"\n'
+    "docker port \"$caddy_id\" 80/tcp | grep -Eq ':80$'\n"
+    "docker port \"$caddy_id\" 443/tcp | grep -Eq ':443$'\n"
 )
 
 
 REMOTE_CHECK = """python3 - <<'REMOTE_PY'
 import json
+import subprocess
 import time
-import urllib.request
 
-base = "http://127.0.0.1"
+host = "stockmarketpredictor.duckdns.org"
 
-def get(path):
-    with urllib.request.urlopen(base + path, timeout=10) as response:
-        assert response.status == 200
-        return response.headers.get("Content-Type", ""), response.read().decode()
+def request(path):
+    return subprocess.check_output(
+        [
+            "curl", "--silent", "--show-error", "--fail",
+            "--max-time", "10",
+            "--resolve", f"{host}:443:127.0.0.1",
+            f"https://{host}{path}",
+        ],
+        text=True,
+    )
+
+def check_redirect():
+    result = subprocess.run(
+        [
+            "curl", "--silent", "--show-error",
+            "--max-time", "10",
+            "--resolve", f"{host}:80:127.0.0.1",
+            "--dump-header", "-",
+            "--output", "/dev/null",
+            f"http://{host}/",
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    headers = result.stdout.lower()
+    assert any(
+        headers.startswith(f"http/1.1 {status}")
+        or headers.startswith(f"http/2 {status}")
+        for status in (301, 308)
+    )
+    assert f"location: https://{host}/" in headers
 
 for attempt in range(20):
     try:
-        _, body = get("/api/health")
-        health = json.loads(body)
+        health = json.loads(request("/api/health"))
         assert health.get("status") == "ok"
         assert health.get("database") == "ok"
 
-        _, body = get("/api/stocks")
-        stocks = json.loads(body)
+        stocks = json.loads(request("/api/stocks"))
         assert isinstance(stocks, list) and stocks
         assert isinstance(stocks[0], dict) and "ticker" in stocks[0]
 
-        content_type, body = get("/")
-        assert "text/html" in content_type
-        assert 'id="root"' in body
+        frontend = request("/")
+        assert 'id="root"' in frontend
 
-        print("PASS: health, stocks, frontend")
+        check_redirect()
+
+        print("PASS: HTTPS, redirect, health, stocks, frontend")
         break
     except Exception:
         if attempt == 19:

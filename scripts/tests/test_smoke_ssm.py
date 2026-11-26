@@ -46,12 +46,14 @@ def test_ssm_smoke_success(monkeypatch, capsys):
     assert script.index("exec >") < script.index("python3 -")
 
     assert "com.docker.compose.project=stock-market-predictor" in script
-    assert "com.docker.compose.service=frontend" in script
+    assert "com.docker.compose.service=caddy" in script
     assert "docker port" in script
     assert script.index("docker port") < script.index("python3 -")
     assert "/api/health" in script
     assert "/api/stocks" in script
-    assert "http://127.0.0.1" in script
+    assert "https://{host}" in script
+    assert "check_redirect()" in script
+    assert "443/tcp" in script
     assert "'id=\"root\"'" in script
 
     assert all("StandardOutputContent" not in str(call) for call in calls)
