@@ -8,7 +8,6 @@ import time
 
 from deploy import aws
 
-
 COMPOSE_FRONTEND_CHECK = (
     'caddy_id="$(docker ps -q '
     "--filter label=com.docker.compose.project=stock-market-predictor "
@@ -19,8 +18,6 @@ COMPOSE_FRONTEND_CHECK = (
     "docker port \"$caddy_id\" 80/tcp | grep -Eq ':80$'\n"
     "docker port \"$caddy_id\" 443/tcp | grep -Eq ':443$'\n"
 )
-
-
 
 
 REMOTE_CHECK = """python3 - <<'REMOTE_PY'
@@ -85,7 +82,6 @@ for attempt in range(20):
             raise
         time.sleep(3)
 REMOTE_PY"""
-
 
 
 def main():
